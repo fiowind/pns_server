@@ -1,0 +1,15 @@
+<?php
+module_load_include('inc', 'pns_form');
+module_load_include('inc', 'pns_form', 'handler_submit');
+module_load_include('inc', 'pns_form', 'handler_update');
+module_load_include('inc', 'pns_form', 'handler_validate');
+module_load_include('inc', 'pns_form', 'handler_delete');
+module_load_include('inc', 'pns_form', 'handler_alter');
+
+function pns_form_init() {
+  if (($_GET['q'] == 'system/ajax' || strstr($_GET['q'], 'file/ajax/')) && preg_match('/^[0-9a-zA-Z_]+_node_form/', $_POST['form_id'])) {
+    module_load_include('inc', 'node', 'node.pages');
+  }
+}
+
+?>

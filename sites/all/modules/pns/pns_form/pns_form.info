@@ -1,0 +1,9 @@
+package = PNS
+name = PNS Form
+description = "PNS Form"
+core = 7.x
+
+; Providers.
+files[] = pns_form.inc
+files[] = pns_form.module
+stylesheets[all][] = pns_form.css

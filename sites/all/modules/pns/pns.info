@@ -1,0 +1,7 @@
+package = PNS
+name = PNS
+description = "PNS"
+core = 7.x
+
+; Providers.  
+scripts[] = util.js

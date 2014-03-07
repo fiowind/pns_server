@@ -1,0 +1,338 @@
+/* edit for draggable table*/
+.tabledrag-toggle-weight{
+	display: none;
+}
+
+/* edit for embeded view */
+.embeded-view-class thead{
+	display: none;
+}
+
+.embeded-view-class .odd{
+	background: transparent;
+}
+
+/* edit for custom table (taxonomy table) */
+.tableheader-processed{
+	border: 1px solid #BEBFB9;
+}
+
+.tableheader-processed th{
+	text-transform: uppercase;
+    background: #E1E2DC;
+    font-weight: normal;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #BEBFB9;
+    padding: 3px 10px;
+}
+
+.tableheader-processed tr{
+	border-width: 0px 1px 0px 1px;
+    border-style: solid;
+    border-color: #BEBFB9;
+}
+
+/* product usage tree 
+#product-catalog-tree-form{
+	float: left;
+	width: 30%;
+}
+
+#tree_content_div{
+	float: left;
+	width: 70%;
+	padding: 0px 10px 0px 10px;
+}
+*/
+.myform .form-type-textfield .form-text {
+/*    left: clear; */
+    width: 200px;
+}
+ 
+.myform .form-textarea-wrapper ,
+.myform .form-select {
+    left: clear;
+/*    width: 200px; */
+}
+
+.myform .form-type-textarea label, 
+.myform .form-type-textfield label, 
+.myform .form-type-radios label, 
+.myform .form-type-checkboxes label, 
+.myform .form-type-select label {
+    float: left;
+    width: 160px;
+    padding: 3px 0px 0px 0px; 
+}
+
+.myform .form-type-radios label.option ,
+.myform .form-type-checkboxes label.option {
+    float: none;
+}
+
+.myform .form-type-textarea .description,
+.myform .form-type-textarea .form-textarea-wrapper,
+.myform .form-type-radios .form-type-radio,
+.myform .form-type-checkboxes .form-type-checkbox {
+    margin-left: 160px;
+}
+
+/* views exposed filters */
+.myform .views-exposed-form .form-type-textfield .form-text ,
+.myform .views-exposed-form .form-select {
+    width: 100px;
+}
+
+
+/* date popup widget */
+.myform .form-type-date-popup .form-text {
+    width: 100%;
+}  
+
+.myform .form-type-date-popup .form-item.form-type-textfield {
+	float: left;
+}
+
+.myform .form-type-date-popup label {
+	display: none;
+	float: left;
+}
+
+.myform .date-no-float.container-inline-date.end-date-wrapper{
+  clear: both;
+  width: 200px;
+}
+
+.myform .date-no-float.container-inline-date {
+	float: left;
+	clear: none;
+	width: 200px;
+}
+
+.myform .form-type-date-popup {
+	padding: 0px;
+}
+
+.myform .form-type-date-popup .form-item.form-type-textfield label {
+	width: 40px;
+}
+
+#chart_show {
+	border: 0px;
+	background-color: white;
+	color: blue;
+}
+
+/* field collection charge item width */
+/*
+#field-charge-collection-values > tbody > tr > td > div> div>div>input{
+  width:100px;
+}
+*/
+.field-multiple-table.sticky-enabled.tabledrag-processed.tableheader-processed.sticky-table > tbody > tr > td > div> div>div>input{
+  width:100px;
+}
+
+
+/* fieldset wrapper */
+div .fieldset-wrapper{
+	padding-left:10px;
+}
+
+
+/* edit for view table with link*/
+
+/* for standard draggable view  */
+/* modified by khg98 */
+.add-link{
+	/*background-color: #e5eff4;*/
+	padding: 2px 0px 2px 8px;
+	/*margin: -10px 0px 0px 0px;*/
+	margin: 0px 0px 0px 0px;
+    /*border-width: 1px;*/
+    border-width: 0px;
+    /*border-style: solid;*/
+    /*border-color: #BEBFB9;*/
+    float: right;
+}
+
+.add-link a{
+	padding: 0px 0px 0px 14px;
+	background: transparent url(/themes/seven/images/add.png) no-repeat 0 center;
+}
+
+/* for standard draggable view  */
+.add-link-in-pcrf{
+	background-color: #e5eff4;
+	padding: 2px 0px 2px 8px;
+	margin: -65px 0px 0px 0px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #BEBFB9;
+}
+
+.add-link-in-pcrf a{
+	padding: 0px 0px 0px 14px;
+	background: transparent url(/themes/seven/images/add.png) no-repeat 0 center;
+}
+
+
+.view-with-link table th {
+    text-transform: uppercase;
+    background: #E1E2DC;
+    font-weight: normal;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #BEBFB9;
+    padding: 3px 10px;
+}
+
+.view-with-link table tr {
+    border-width: 0px 1px 0px 1px;
+    border-style: solid;
+    border-color: #BEBFB9;
+}
+
+/*edit for view table without link */
+.view-without-link table th {
+    text-transform: uppercase;
+    background: #E1E2DC;
+    font-weight: normal;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #BEBFB9;
+    padding: 3px 10px;
+}
+
+.view-without-link table tr {
+    border-width: 0px 1px 0px 1px;
+    border-style: solid;
+    border-color: #BEBFB9;
+}
+
+.view-without-link table .views-row-last {
+    border-width: 0px 1px 1px 1px;
+    border-style: solid;
+    border-color: #BEBFB9;
+}
+
+
+/* add link in accordion message */
+/*                               */
+.add-link-in-accordion{	
+    width: 400px;
+    background-color: #e5eff4;
+	padding: 2px 0px 2px 8px;
+	margin: 0px 0px 30px 30px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #BEBFB9;
+}
+
+.add-link-in-accordion a{
+	padding: 0px 0px 0px 14px;
+	background: transparent url(/themes/seven/images/add.png) no-repeat 0 center;
+}
+
+.view-with-link-in-accordion {
+    width: 410px;
+}
+
+.view-with-link-in-accordion table {
+    margin: 10px 10px 0px 30px;
+}
+
+.view-with-link-in-accordion table th {
+    text-transform: uppercase;
+    background: #E1E2DC;
+    font-weight: normal;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #BEBFB9;
+    padding: 3px 10px;
+}
+
+.view-with-link-in-accordion table tr {
+    border-width: 0px 1px 0px 1px;
+    border-style: solid;
+    border-color: #BEBFB9;
+}
+
+/* view in rightpane */
+/* modified by khg98 */
+.add-link-in-rightpane{	
+    width: 490px;
+    /*background-color: #e5eff4;*/
+	padding: 2px 0px 2px 8px;
+	margin: 0px 0px 30px 0px;
+    /*
+    border-width: 1px;
+    border-width: 1px;
+    border-style: solid;
+    */
+    /*border-color: #BEBFB9;*/
+    float: center;
+}
+
+.add-link-in-rightpane a{
+	padding: 0px 0px 0px 14px;
+	background: transparent url(/themes/seven/images/add.png) no-repeat 0 center;
+    float: right;
+}
+
+.view-with-link-in-rightpane {
+    width: 410px;
+}
+
+.view-with-link-in-rightpane .form-submit {
+    margin: 30px 0px 0px 0px;
+}
+
+.view-with-link-in-rightpane table {
+    margin: 10px 0px 0px 0px;
+}
+
+.view-with-link-in-rightpane table th {
+    text-transform: uppercase;
+    background: #E1E2DC;
+    font-weight: normal;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #BEBFB9;
+    padding: 3px 10px;
+}
+
+.view-with-link-in-rightpane table tr {
+    border-width: 0px 1px 0px 1px;
+    border-style: solid;
+    border-color: #BEBFB9;
+}
+
+/* edit for embeded view table */
+.embeded-view-class table tr{
+    border: 0px;
+}
+
+/* ajax loaded quick tab 
+#tree_content_div ul.quicktabs-tabs{
+	display:none;
+}
+*/
+
+/* ajax load vbo */
+#tree_content_div fieldset.container-inline.collapsible.form-wrapper{
+	display:none;
+}
+
+
+/* accordian padding */
+#quickset-menu > .ui-accordion-content{
+    padding: 1em;
+}
+
+/* views exposed form search */
+.views-exposed-widget.views-submit-button > button.form-submit{
+    margin-top: 0em;
+}
+

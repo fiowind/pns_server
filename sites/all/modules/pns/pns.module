@@ -1,0 +1,6 @@
+<?php
+module_load_include('inc', 'pns');
+module_load_include('inc', 'pns', 'util');
+
+?>
+

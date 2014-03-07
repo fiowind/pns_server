@@ -1,0 +1,10 @@
+name = Modules Weight
+description = This module provide admin interface to order the modules execution order.
+core = 7.x
+configure = admin/config/system/modules-weight
+; Information added by drupal.org packaging script on 2013-06-15
+version = "7.x-1.3"
+core = "7.x"
+project = "modules_weight"
+datestamp = "1371327952"
+
