@@ -1,0 +1,15 @@
+{
+	"server": {
+		"host": "192.168.2.81",
+		"port": "8100"
+	},
+	"db": {
+		"host": "180.64.233.239",
+	  	"port": "3307",
+	  	"user": "mmsmo",
+	  	"password": "mmsmo.123",
+	  	"database": "mmsmo"
+	},
+	"logLevel": "DBG",
+	"processName": "msg_uan_session"
+}

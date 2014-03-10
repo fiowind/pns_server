@@ -1,0 +1,110 @@
+<?php
+
+function pns_appclient_services_services_resources() {
+  $resources['appclient'] = array();
+
+  return array(
+    'appclient' => array(
+        'create' => array(
+            'help' => 'Create an appclient',
+            'callback' => 'pns_appclient_services_create',
+            'access callback' => 'pns_appclient_services_access',
+						'args' => array(
+							array(
+								'name' => 'appclient',
+								'optional' => FALSE,
+								'source' => 'data',
+								'description' => 'The node data to create',
+								'type' => 'array',
+								),
+							),
+            ),
+        ),
+    );
+
+  return $resources;
+}
+
+function pns_appclient_services_access() {
+    return TRUE;
+}
+
+function pns_appclient_services_create($appcli_raw) {
+    global $user;
+    $account = user_load(1);
+    $user = $account;
+    
+    $appcli_raw = _services_arg_value($appcli_raw, 'appclient');
+
+		watchdog('appClient', 'appClient((json) : %appClient', array('%appClient' => json_encode($appcli_raw)));
+		error_log('appClient raw: '.json_encode($appcli_raw));
+
+		$ret_arr = _create_app_client($appcli_raw);
+
+		error_log('here4');
+
+    return $ret_arr;
+}
+
+function _create_app_client($appcli_arr) {
+  global $user;
+	$ret_arr = array();
+	$ref_app_nid = 0;
+
+	$viewResult = views_get_view_result('list_application', 'panel_pane_2', $appcli_arr['app_id']);
+	if(count($viewResult) == 0) {
+		$retArray['result'] = "error";
+		$retArray['reason'] = "app_id(package name) doesn't exist";
+		return $retArray;
+	} else {
+		error_log('nid: '.$viewResult[0]->nid);
+		$ref_app_nid = $viewResult[0]->nid;
+	}
+
+	$term = array();
+	$term_arr = array();
+
+	if(isset($appcli_arr['locale'])){
+			$term_arr = taxonomy_get_term_by_name($appcli_arr['locale'], 'locale');
+			$term['locale'] = !empty($temp_arr)? current($temp_arr)->tid: NULL;
+	} 
+	if(isset($appcli_arr['operating_system'])){
+			$term_arr = taxonomy_get_term_by_name($appcli_arr['operating_system'], 'operating_system');
+			$term['operating_system'] = !empty($temp_arr)? current($temp_arr)->tid: NULL;
+	} 
+	if(isset($appcli_arr['device_brand'])){
+			$term_arr = taxonomy_get_term_by_name($appcli_arr['device_brand'], 'device_brand');
+			$term['device_brand'] = !empty($temp_arr)? current($temp_arr)->tid: NULL;
+	} 
+
+	$appClient = new stdClass();
+	$appClient->title = "appcli_arr_";
+	$appClient->uid = $user->uid;
+	$appClient->type ="app_client";
+	$appClient->field_app_version['und'][0]['value'] = isset($appcli_arr['app_version'])? $appcli_arr['app_version']: '0';
+	$appClient->field_push_token['und'][0]['value'] = isset($appcli_arr['push_token'])? $appcli_arr['push_token']: '';
+	$appClient->field_uuid['und'][0]['value'] = isset($appcli_arr['uuid'])? $appcli_arr['uuid']: '';
+	$appClient->field_mdn['und'][0]['value'] = isset($appcli_arr['mdn'])? $appcli_arr['mdn']: '';
+	$appClient->field_os_version['und'][0]['value'] = isset($appcli_arr['os_version'])? $appcli_arr['os_version']: 0;
+	$appClient->field_resolution_width['und'][0]['value'] = isset($appcli_arr['resolution_width'])? $appcli_arr['resolution_width']: 0;
+	$appClient->field_resolution_height['und'][0]['value'] = isset($appcli_arr['resolution_height'])? $appcli_arr['resolution_height']: 0;
+	$appClient->field_device_id['und'][0]['value'] = isset($appcli_arr['device_id'])? $appcli_arr['device_id']: '';
+	$appClient->field_ref_app['und'][0]['nid'] = $ref_app_nid;
+
+	if(isset($term['locale'])) { 
+		$appClient->field_locale['und'][0]['tid'] = $term['locale']; 
+	}
+	if(isset($term['operating_system'])) { 
+		$appClient->field_operating_system['und'][0]['tid'] = $term['operating_system'];
+	}
+	if(isset($term['device_brand'])) { 
+		$appClient->field_device_brand['und'][0]['tid'] = $term['device_brand'];
+	}
+
+	watchdog('appClient', 'appClient((json) : %appClient', array('%appClient' => json_encode($appClient)));
+	node_save($appClient);
+  $ret_arr['result'] = 'success';
+
+	return $ret_arr;
+}
+

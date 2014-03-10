@@ -1,0 +1,7 @@
+package = PNS App Client Services
+name = PNS App Client Services Module
+description = "PNS App Client Services Module"
+core = 7.x
+
+; Providers.
+files[] = pns_appclient_services.module
