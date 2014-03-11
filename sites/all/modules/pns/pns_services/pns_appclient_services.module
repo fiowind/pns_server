@@ -29,19 +29,17 @@ function pns_appclient_services_access() {
     return TRUE;
 }
 
-function pns_appclient_services_create($appcli_raw) {
+function pns_appclient_services_create($appclient) {
     global $user;
     $account = user_load(1);
     $user = $account;
-    
-    $appcli_raw = _services_arg_value($appcli_raw, 'appclient');
+
+    $appcli_raw = _services_arg_value($appclient, 'appcli_raw');
 
 		watchdog('appClient', 'appClient((json) : %appClient', array('%appClient' => json_encode($appcli_raw)));
 		error_log('appClient raw: '.json_encode($appcli_raw));
 
 		$ret_arr = _create_app_client($appcli_raw);
-
-		error_log('here4');
 
     return $ret_arr;
 }
@@ -57,7 +55,6 @@ function _create_app_client($appcli_arr) {
 		$retArray['reason'] = "app_id(package name) doesn't exist";
 		return $retArray;
 	} else {
-		error_log('nid: '.$viewResult[0]->nid);
 		$ref_app_nid = $viewResult[0]->nid;
 	}
 
@@ -81,6 +78,7 @@ function _create_app_client($appcli_arr) {
 	$appClient->title = "appcli_arr_";
 	$appClient->uid = $user->uid;
 	$appClient->type ="app_client";
+	$appClient->language ="und";
 	$appClient->field_app_version['und'][0]['value'] = isset($appcli_arr['app_version'])? $appcli_arr['app_version']: '0';
 	$appClient->field_push_token['und'][0]['value'] = isset($appcli_arr['push_token'])? $appcli_arr['push_token']: '';
 	$appClient->field_uuid['und'][0]['value'] = isset($appcli_arr['uuid'])? $appcli_arr['uuid']: '';
@@ -89,7 +87,7 @@ function _create_app_client($appcli_arr) {
 	$appClient->field_resolution_width['und'][0]['value'] = isset($appcli_arr['resolution_width'])? $appcli_arr['resolution_width']: 0;
 	$appClient->field_resolution_height['und'][0]['value'] = isset($appcli_arr['resolution_height'])? $appcli_arr['resolution_height']: 0;
 	$appClient->field_device_id['und'][0]['value'] = isset($appcli_arr['device_id'])? $appcli_arr['device_id']: '';
-	$appClient->field_ref_app['und'][0]['nid'] = $ref_app_nid;
+	$appClient->field_ref_app['und'][0]['target_id'] = $ref_app_nid;
 
 	if(isset($term['locale'])) { 
 		$appClient->field_locale['und'][0]['tid'] = $term['locale']; 

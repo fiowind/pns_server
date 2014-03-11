@@ -1,0 +1,1 @@
+insert into push_sms values (12345, 'SMS', '01035085273', '01035085273', '01035085273', 1, 0, 'test message', null, 0, 0, 0, 0);

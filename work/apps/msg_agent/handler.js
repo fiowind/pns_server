@@ -19,25 +19,6 @@ function smsSender(data) {
 
 	console.log(data);
 
-
-	// only test start
-	data.tid = 12345;
-	data.comapign_id = 12345;
-	data.app_client_id = 12345;
-	data.target = 'SMS';
-	data.sender_mdn = '01035085273';
-	data.receiver_mdn = '01035085273';
-	data.callback_mdn = '01035085273';
-	data.requested_at = Date.now();
-	data.scheduled_at = Date.now();
-	data.send_at = Date.now();
-	data.maxmum_retry_cnt = 5;
-	data.attempted_retry_cnt = Date.now();
-	data.last_attemped_at = Date.now();
-	data.text = 'test message 한글';
-	data.status = 'Requesting';
-	// only test end
-
 	var urlStr = config.sms.url + '?' +
 				 'id=Svc' + '&' +
 				 'op=sendsms' + '&' +
@@ -56,37 +37,41 @@ function smsSender(data) {
 	};
 
 	/* only test start */
+	/*
 	conf.sms.send++;
 
 	setTimeout(function() {
 		conf.sms.send--;
 	}, 100);
+	*/
 	/* only test end */
 
-	/*
 	var req = http.request(option, function(res) {
 		console.log('[SMS] STATUS: ' + res.statusCode);
 		console.log('[SMS] HEADER: ' + JSON.stringify(res.headers));
 		res.setEncoding('utf8');
 
-		if (res.statusCode !== '200') {
-			// update fail
+		if (parseInt(res.statusCode, 10) !== 200) {
+			_updateResult('fail', function(err, result) {
+				if (err) throw err;
+			});
+			return;
 		}
 
 		res.on('data', function(chunk) {
 			console.log('[SMS] BODY: ' + chunk);
 			conf.sms.send--;
 
-			if (chunk === 'RESULT=OK') {
+			if (chunk.toString() === 'RESULT=OK\n') {
 				// update success
-				_updateResult(3, function(err, result) {
-					
+				_updateResult('success', function(err, result) {
+					if (err) throw err;
 				});
 			}
 			else {
 				// update fail
-				_updateResult(3, function(err, result) {
-					
+				_updateResult('fail', function(err, result) {
+					if (err) throw err;
 				});
 			}
 		});
@@ -96,15 +81,15 @@ function smsSender(data) {
 		console.log ('[SMS] request error: ' + err);
 	});
 
-	req.end();
 	conf.sms.send++;
-	*/
+	req.end();
 
-	function _updateResult(callback) {
-		var sql = 'update tbl_seo set id = ? where seq = ?';
-		var arg = [ 3, data.seq, data ];
+	function _updateResult(resStatus, callback) {
+		var sql = 'update push_sms set status = ?, sent_at = ?, attempted_retry_cnt = + 1, last_attemped_at = ? ' +
+														'where tid = ?';
+		var arg = [ resStatus, Date.now(), Date.now(), data.tid ];
 		db.query(sql, arg, function(err, result) {
-			callback(err, result);
+				callback(err, result);
 		});
 	}
 }

@@ -144,14 +144,19 @@ function _getQueueRouteSMS(route, handle) {
 			db.beginTransaction(function(err) {
 				if (err) throw err;
 	
-				sql = 'select * from tbl_seo where id = 3 limit ' + conf.sms.tps;
-				db.query(sql, function(err, rows) {
+				sql = 'select * from push_sms ' + 
+											'where (status is null or status = ?) ' + 
+											  'and maximum_retry_cnt > attempted_retry_cnt ' +
+											  'and target = ? ' +
+											'limit ' + conf.sms.tps;
+				arg = [ 'fail', 'SMS' ];
+				db.query(sql, arg, function(err, rows) {
 					if (err) throw err;
 	
 					console.log('select rows.length = ['+rows.length+']');
 					for (var i = 0; i < rows.length; i++) {
-						sql = 'update tbl_seo set id = ? where seq = ?';
-						arg = [ 2, rows[i].seq, rows[i] ];
+						sql = 'update push_sms set status = ?, requested_at = ? where tid = ?';
+						arg = [ 'requested', Date.now(), rows[i].tid, rows[i] ];
 						db.query(sql, arg, function(err, result) {
 						if (err) {
 								db.rollback(function() {
@@ -184,7 +189,55 @@ function _getQueueRouteMMS(route, handle) {
 }
 
 function _getQueueRouteGCM(route, handle) {
-	return;
+	try {
+
+		if (conf.sms.send >= conf.sms.tps) {
+			console.log('sms tps over!! send [' + conf.sms.send + '>=' + conf.sms.tps + '] tps');
+			return;
+		}
+		else {
+			db.beginTransaction(function(err) {
+				if (err) throw err;
+	
+				sql = 'select * from push_sms ' + 
+											'where (status is null or status = ?) ' + 
+											  'and maximum_retry_cnt > attempted_retry_cnt ' +
+											  'and target = ? ' +
+											'limit ' + conf.sms.tps;
+				arg = [ 'fail', 'SMS' ];
+				db.query(sql, arg, function(err, rows) {
+					if (err) throw err;
+	
+					console.log('select rows.length = ['+rows.length+']');
+					for (var i = 0; i < rows.length; i++) {
+						sql = 'update push_sms set status = ?, requested_at = ? where tid = ?';
+						arg = [ 'requested', Date.now(), rows[i].tid, rows[i] ];
+						db.query(sql, arg, function(err, result) {
+						if (err) {
+								db.rollback(function() {
+									throw err;
+								});
+							};
+							db.commit(function(err) {
+								if (err) {
+									db.rollback(function() {
+										throw err;
+									});
+								}
+								console.log('update success!');
+								// do send 
+								route(handle, 'SMS', arg[arg.length-1]);
+							}); // end commit
+						}); // end update
+					} // end for
+				}); // end select
+			}); // end transaction
+		} // end if idle
+	}
+	catch (err) {
+		throw err;
+	}
+
 }
 
 function _getQueueRouteAPNS(route, handle) {
