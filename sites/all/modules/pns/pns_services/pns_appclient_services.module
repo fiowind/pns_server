@@ -123,10 +123,25 @@ function _create_app_client($appcli_arr) {
 	if(isset($ref_device_model)){
 		$appClient->field_ref_device_model['und'][0]['target_id'] = $ref_device_model;
 	}
-
 	node_save($appClient);
-  	$ret_arr['result'] = 'success';
+
+	if(isset($appClient->nid)) {
+		_create_device_connection($appcli_arr['device_id'], $ref_app_nid);
+	}
+	
+	$ret_arr['result'] = 'success';
 
 	return $ret_arr;
 }
 
+function _create_device_connection($device_id, $ref_app_nid) {
+	
+	$entity = new stdClass();
+	$entity->entity_type = 'data_device_connection';
+	$entity->data_table = 'device_connection';
+
+	$entity->device_id = $device_id;
+	$entity->field_ref_app_client['und'][0]['target_id'] = $ref_app_nid;
+
+	entity_save('data_device_connection', $entity);
+}

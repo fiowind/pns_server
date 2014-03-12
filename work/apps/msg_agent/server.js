@@ -1,3 +1,9 @@
+// init config
+global.conf = require('./config');
+
+// init log
+var ua_log = require('ualib').ua_log;
+global.log = new ua_log(conf.logLevel, conf.processName);
 
 var domain = require('domain');
 var mysql = require('mysql');
@@ -8,7 +14,7 @@ function start(route, handle) {
 	try {
 		var ret = false;
 
-		console.log('server started!!!');
+		log.info('server started!!!');
 
 		// init process
 		_initProcess(function(err) {
@@ -21,7 +27,7 @@ function start(route, handle) {
 		});
 	}
 	catch (err) {
-		console.log ('start() catch error : ' + err);
+		log.error('start() catch error : ' + err);
 
 		// end Process
 		_endProcess(function(err) {
@@ -53,7 +59,7 @@ function _initProcess(callback) {
 		callback(null);
 	}
 	catch (err) {
-		console.log('_initProcess() catch error : ' + err);
+		log.error('_initProcess() catch error : ' + err);
 		callback(err);
 	}
 }
@@ -65,19 +71,19 @@ function _doConnectDB() {
 		// connect db
 		db.connect(function(err) {
 			if (err) {
-				console.log('error where connection to db:', err);
+				log.error('error where connection to db:', err);
 				conf.status.db = false;
 				setTimeout(_doConnectDB, 2000);
 			}
 			else {
 				conf.status.db = true;
-				console.log('db connect ok...');
+				log.info('db connect ok...');
 			}
 		});
 
 		// check db
 		db.on('error', function(err) {
-			console.log('db error', err);
+			log.error('db error', err);
 			if (err.code === 'PROTOCOL_CONNECTION_LOST') {
 				conf.status.db = false;
 				db = _doConnectDB();
@@ -88,7 +94,7 @@ function _doConnectDB() {
 		});
 	}
 	catch (err) {
-		console.log('_doConnectDB() catch error : ' + err);
+		log.error('_doConnectDB() catch error : ' + err);
 		return false;
 	}
 }
@@ -100,12 +106,12 @@ function _doConnectRedis() {
 
 		// check redis
 		db.on('error', function(err) {
-			console.log('redis pub error', err);
+			log.error('redis pub error', err);
 				if (err) throw err;
 		});
 	}
 	catch (err) {
-		console.log('_doConnectRedis() catch error : ' + err);
+		log.error('_doConnectRedis() catch error : ' + err);
 		throw err;	
 	}
 }
@@ -131,7 +137,7 @@ function _doProcess(route, handle, callback) {
 
 	}
 	catch (err) {
-		console.log('_doProcess() error : ' + err);
+		log.error('_doProcess() error : ' + err);
 		callback(err);
 	}
 }
@@ -147,7 +153,7 @@ function _endProcess(callback) {
 		return callback(null);
 	}
 	catch (err) {
-		console.log('_endProcess() error : ' + err);
+		log.error('_endProcess() error : ' + err);
 		return callback(err);
 	}
 }
@@ -157,7 +163,7 @@ function _getQueueRouteSMS(route, handle) {
 
 	try {
 		if (conf.sms.send >= conf.sms.tps) {
-			console.log('sms tps over!! send [' + conf.sms.send + '>=' + conf.sms.tps + '] tps');
+			log.info('sms tps over!! send [' + conf.sms.send + '>=' + conf.sms.tps + '] tps');
 			return;
 		}
 		else {
@@ -173,7 +179,7 @@ function _getQueueRouteSMS(route, handle) {
 				db.query(sql, arg, function(err, rows) {
 					if (err) throw err;
 	
-					console.log('select rows.length = ['+rows.length+']');
+					log.info('[SMS] select rows.length = ['+rows.length+']');
 					for (var i = 0; i < rows.length; i++) {
 						sql = 'update push_sms set status = ?, requested_at = ? where tid = ?';
 						arg = [ 'requested', Date.now(), rows[i].tid, rows[i] ];
@@ -189,7 +195,7 @@ function _getQueueRouteSMS(route, handle) {
 										throw err;
 									});
 								}
-								console.log('update success!');
+								log.debug('update success!');
 								// do send 
 								route(handle, 'SMS', arg[arg.length-1]);
 							}); // end commit
@@ -212,7 +218,7 @@ function _getQueueRouteGCM(route, handle) {
 	try {
 
 		if (conf.gcm.send >= conf.gcm.tps) {
-			console.log('gcm tps over!! send [' + conf.gcm.send + '>=' + conf.gcm.tps + '] tps');
+			log.info('gcm tps over!! send [' + conf.gcm.send + '>=' + conf.gcm.tps + '] tps');
 			return;
 		}
 		else {
@@ -220,15 +226,15 @@ function _getQueueRouteGCM(route, handle) {
 				if (err) throw err;
 	
 				sql = 'select * from push_gcm ' + 
-											'where (status is null or status = ?) ' + 
-											  'and maximum_retry_cnt > attempted_retry_cnt ' +
-											  'and target = ? ' +
-											'limit ' + conf.gcm.tps;
+							  'where (status is null or status = ?) ' + 
+							    'and maximum_retry_cnt > attempted_retry_cnt ' +
+							    'and target = ? ' +
+							  'limit ' + conf.gcm.tps;
 				arg = [ 'fail', 'GCM' ];
 				db.query(sql, arg, function(err, rows) {
 					if (err) throw err;
 	
-					console.log('select rows.length = ['+rows.length+']');
+					log.info('[GCM] select rows.length = ['+rows.length+']');
 					for (var i = 0; i < rows.length; i++) {
 						sql = 'update push_gcm set status = ?, requested_at = ? where tid = ?';
 						arg = [ 'requested', Date.now(), rows[i].tid, rows[i] ];
@@ -244,7 +250,7 @@ function _getQueueRouteGCM(route, handle) {
 										throw err;
 									});
 								}
-								console.log('update success!');
+								log.debug('update success!');
 								// do send 
 								route(handle, 'GCM', arg[arg.length-1]);
 							}); // end commit
@@ -272,7 +278,7 @@ function _getQueueRouteUAN(route, handle) {
 	try {
 
 		if (conf.uan.send >= conf.uan.tps) {
-			console.log('uan tps over!! send [' + conf.uan.send + '>=' + conf.uan.tps + '] tps');
+			log.info('uan tps over!! send [' + conf.uan.send + '>=' + conf.uan.tps + '] tps');
 			return;
 		}
 		else {
@@ -280,14 +286,14 @@ function _getQueueRouteUAN(route, handle) {
 				if (err) throw err;
 	
 				sql = 'select * from push_direct ' + 
-											'where (status is null or status = ?) ' + 
-											  'and maximum_retry_cnt > attempted_retry_cnt ' +
-											'limit ' + conf.uan.tps;
+							  'where (status is null or status = ?) ' + 
+								'and maximum_retry_cnt > attempted_retry_cnt ' +
+							  'limit ' + conf.uan.tps;
 				arg = [ 'fail' ];
 				db.query(sql, arg, function(err, rows) {
 					if (err) throw err;
 	
-					console.log('select rows.length = ['+rows.length+']');
+					log.info('[UAN] select rows.length = ['+rows.length+']');
 					for (var i = 0; i < rows.length; i++) {
 						sql = 'update push_direct set status = ?, requested_at = ? where tid = ?';
 						arg = [ 'requested', Date.now(), rows[i].tid, rows[i] ];
@@ -303,7 +309,7 @@ function _getQueueRouteUAN(route, handle) {
 										throw err;
 									});
 								}
-								console.log('update success!');
+								log.debug('update success!');
 								// do send 
 								route(handle, 'UAN', arg[arg.length-1]);
 							}); // end commit
@@ -324,7 +330,7 @@ function _getQueueRouteUAN(route, handle) {
 
 // exception
 process.on('uncaughtException', function(err) {
-	  console.log('Caught exception: ' + err);
+	  log.info('Caught exception: ' + err);
 });
 
 // kill -1
@@ -332,7 +338,7 @@ process.on('SIGHUP', function() {
 	conf.status.db = false;
 	
 	setTimeout(function() {
-		console.log('config reloaded.');
+		log.info('config reloaded.');
 		global.conf = require('./config');
 	}, 1000);
 });
@@ -343,7 +349,7 @@ process.on('SIGINT', function() {
 
 	setTimeout(function() {
 		db.end();
-		console.log('process exit.');
+		log.info('process exit.');
 		process.exit(0);
 	}, 1000);
 });
@@ -354,7 +360,7 @@ process.on('SIGTERM', function() {
 
 	setTimeout(function() {
 		db.end();
-		console.log('process exit.');
+		log.info('process exit.');
 		process.exit(0);
 	}, 1000);
 });

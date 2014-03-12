@@ -108,7 +108,7 @@ function gcmSender(data) {
 		log.debug('[GCM] data : ' + data);
 
 		message = new gcm.Message();
-		sender = new gcm.Sender(data.cetificate_path);
+		sender = new gcm.Sender(data.api_key);
 	
 		if (data.text) {
 			message.addDataWithKeyValue('text', data.text);
@@ -127,38 +127,36 @@ function gcmSender(data) {
 		// sender.send(message, regid, 4, function(err, result)
 		sender.sendNoRetry(message, regid, function(err, result) {	
 			if (err) {
-				console.log('[GCM] sender error: ' + err);
-				_updateResult('fail', function(err, result) {
-					if (err) throw err;
-				});
+				log.error('[GCM] sender error: ' + err);
+				_updateResult('fail', data.tid);
 				throw err;
 			}
 	
 			if (result) {
-				console.log('[GCM] sender result: ' + JSON.stringify(result));
-				_updateResult('success', function(err, result) {
-					if (err) throw err;
-				});
+				log.info('[GCM] sender result: ' + JSON.stringify(result));
+				_updateResult('success', data.tid);
 			}
 			else {
-				_updateResult('fail', function(err, result) {
-					if (err) throw err;
-				});
+				log.error('[GCM] sender result: ' + JSON.stringify(result));
+				_updateResult('fail', data.tid);
 			}
-	
 		});
-	
-		function _updateResult(resStatus, callback) {
+
+		function _updateResult(resStatus, tid) {
 			var sql = 'update push_gcm set status = ?, sent_at = ?, attempted_retry_cnt = + 1, last_attemped_at = ? ' +
-															'where tid = ?';
-			var arg = [ resStatus, Date.now(), Date.now(), data.tid ];
+									'where tid = ?';
+			var arg = [ resStatus, Date.now(), Date.now(), tid ];
 			db.query(sql, arg, function(err, result) {
-					callback(err, result);
+				if (err) {
+					log.error('[GCM] _updateResult error tid = [' + tid + '] : ' + err);
+					throw err;
+				}
+				log.info('[GCM] _updateResult sucess tid = [' + tid + '] : ' + JSON.stringify(result));
 			});
 		}
 	}
 	catch (err) {
-		throw err;
+		log.error('[GCM] gcmSender catch error : ' + err);
 	}
 
 }

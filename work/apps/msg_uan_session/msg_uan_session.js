@@ -97,13 +97,13 @@ else {
 				//store.srem(socket.deviceID);
 	
 				delete sockets[socket.deviceID];
-				socket.end();
 	
 				if (socket.deviceID) {
-					socket.deviceID = false;
-					_updateDeviceConnection('false', function(err, result) {
+					_updateDeviceConnection(socket.deviceID, 'false', function(err, result) {
 						if (err) throw err;
 					});
+					socket.deviceID = false;
+					socket.end();
 				}
 			});
 	
@@ -122,37 +122,38 @@ else {
 	
 					temp = recvStr.split(':');
 					socket.deviceID = temp[2];  
-					sockets[socket.deviceID] = socket;
-	
-					// session status insert
-					//store.sadd(socket.deviceID);
-	
-					log.info('['+socket.deviceID+'] : cleint conneted.');
-					
-					// insert status code
-	
-					sessionID = process.pid + '|' + date.getTime();
-	
-					sendStr = '1::' + process.pid + '|' + date.getTime(); 
-					ret = _sendToSocket(socket, sendStr);
-					if (!ret) {
-						return;
-					}
-	
+
 					_selectDeviceConnection(socket.deviceID, function(err, rows) {
-							if (err) throw err;
-	
-							if (rows.length) {
-								if (rows[0].is_conneted === 'true') {
-									log.info('['+socket.deviceID+'] : already conneted. force disconnect.');
-									socket.emit('end');
-								}
-								else {
-									_updateDeviceConnection('true', function(err, result) {
-										if (err) throw err;
-									});
-								}
+						if (err) {
+							log.error('['+socket.deviceID+'] : _selectDeviceConnection error : ' + err);
+							throw err;
+						}
+
+						if (rows.length) {
+							if (rows[0].is_connected === 'true') {
+								log.info('['+socket.deviceID+'] : already conneted. force disconnect.');
+								//socket.close();
 							}
+							else {
+									log.info('seokeun0');
+								sockets[socket.deviceID] = socket;
+								_updateDeviceConnection(socket.deviceID, 'true', function(err, result) {
+									if (err) throw err;
+
+									//store.sadd(socket.deviceID);
+									
+									log.info('seokeun1');
+									log.info('['+socket.deviceID+'] : cleint conneted.');
+									log.info('seokeun2');
+	
+									sendStr = '1::' + process.pid + '|' + date.getTime(); 
+									ret = _sendToSocket(socket, sendStr);
+									if (!ret) {
+										return;
+									}
+								});
+							}
+						}
 					});
 				}
 				else if (recvStr[0] === '2') {
@@ -175,12 +176,12 @@ else {
 					ack.errCode = temp2[1];
 	
 					if (parseInt(ack.errCode, 10) === 0) {
-						_updatePushDirect('success', function(err, result) {
+						_updatePushDirect(ack.tid, 'success', function(err, result) {
 							if (err) throw err;
 						});
 					}
 					else {
-						_updatePushDirect('fail', function(err, result) {
+						_updatePushDirect(ack.tid, 'fail', function(err, result) {
 							if (err) throw err;
 						});
 					}
@@ -222,6 +223,10 @@ else {
 		log.error('worker catch error : ' + err);
 		throw err;
 	}
+
+	process.on('uncaughtException', function(err) {
+		log.info('Caught exception: ' + err);
+	});
 }
 
 function _sendToSocket(socket, msg) {
@@ -243,11 +248,24 @@ function _sendToSocket(socket, msg) {
 	}
 }
 
-function _updateDeviceConnection(is_connected, callback) {
+function _selectDeviceConnection(deviceID, callback) {
+	try {
+		var sql = 'select * from device_connection where device_id = ?';
+		var arg = [ socket.deviceID ];
+		db.query(sql, arg, function(err, rows) {
+			callback(err, rows);
+		})
+	}
+	catch (err) {
+		throw err;
+	}
+}
+
+function _updateDeviceConnection(deviceID, is_connected, callback) {
 	try {
 		var sql = 'update device_connection set is_connected = ? ' +
-																		 'where device_id = ?';
-		var arg = [ is_connected, socket.deviceID ];
+										 'where device_id = ?';
+		var arg = [ is_connected, deviceID ];
 		db.query(sql, arg, function(err, result) {
 			callback(err, result);
 		});
@@ -257,11 +275,11 @@ function _updateDeviceConnection(is_connected, callback) {
 	}
 }
 
-function _updatePushDirect(resStatus, callback) {
+function _updatePushDirect(tid, resStatus, callback) {
 	try {
 		var sql = 'update push_direct set status = ?, sent_at = ?, attempted_retry_cnt = + 1, last_attemped_at = ? ' +
-															 'where tid = ?';
-		var arg = [ resStatus, Date.now(), Date.now(), data.tid ];
+								   'where tid = ?';
+		var arg = [ resStatus, Date.now(), Date.now(), tid ];
 		db.query(sql, arg, function(err, result) {
 			callback(err, result);
 		});
@@ -270,3 +288,4 @@ function _updatePushDirect(resStatus, callback) {
 		throw err;
 	}
 }
+
