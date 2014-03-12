@@ -6,6 +6,14 @@
 		"tps": "30",
 		"send": "0"
 	},
+	"gcm": {
+		"tps": "30",
+		"send": "0"
+	},
+	"uan": {
+		"tps": "30",
+		"send": "0"
+	},
 	"database": {
 		"mysql": {
 			"host": "localhost",

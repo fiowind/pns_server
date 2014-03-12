@@ -14,25 +14,7 @@ var msg = { type: 'UAN', tid: '140228111111123456' sender: '01035085273', recver
 //while(1) {
 
 	setInterval(function() {
-	pub.publish ('seotest', JSON.stringify(msg));
-	pub.publish ('seotest', JSON.stringify(msg));
-	pub.publish ('seotest', JSON.stringify(msg));
-	pub.publish ('seotest', JSON.stringify(msg));
-	pub.publish ('seotest', JSON.stringify(msg));
-	pub.publish ('seotest', JSON.stringify(msg));
-	pub.publish ('seotest', JSON.stringify(msg));
-	pub.publish ('seotest', JSON.stringify(msg));
-	pub.publish ('seotest', JSON.stringify(msg));
-	pub.publish ('seotest', JSON.stringify(msg));
-	pub.publish ('seotest', JSON.stringify(msg));
-	pub.publish ('seotest', JSON.stringify(msg));
-	pub.publish ('seotest', JSON.stringify(msg));
-	pub.publish ('seotest', JSON.stringify(msg));
-	pub.publish ('seotest', JSON.stringify(msg));
-	pub.publish ('seotest', JSON.stringify(msg));
-	pub.publish ('seotest', JSON.stringify(msg));
-	pub.publish ('seotest', JSON.stringify(msg));
-	console.log('while');
+		pub.publish ('direct', JSON.stringify(msg));
 	}, 100);
 //}
 

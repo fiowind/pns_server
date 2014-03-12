@@ -1,6 +1,7 @@
 
 var domain = require('domain');
 var mysql = require('mysql');
+var redis = require('redis');
 
 function start(route, handle) {
 
@@ -44,6 +45,10 @@ function _initProcess(callback) {
 		global.db = false;
 		_doConnectDB();
 
+		// connect redis
+		global.pub = false;
+		_doConnectRedis();
+
 		// 추후 사용
 		callback(null);
 	}
@@ -85,6 +90,23 @@ function _doConnectDB() {
 	catch (err) {
 		console.log('_doConnectDB() catch error : ' + err);
 		return false;
+	}
+}
+
+function _doConnectRedis() {
+
+	try {
+		pub  = redis.createClient();
+
+		// check redis
+		db.on('error', function(err) {
+			console.log('redis pub error', err);
+				if (err) throw err;
+		});
+	}
+	catch (err) {
+		console.log('_doConnectRedis() catch error : ' + err);
+		throw err;	
 	}
 }
 
@@ -134,8 +156,6 @@ function _endProcess(callback) {
 function _getQueueRouteSMS(route, handle) {
 
 	try {
-
-
 		if (conf.sms.send >= conf.sms.tps) {
 			console.log('sms tps over!! send [' + conf.sms.send + '>=' + conf.sms.tps + '] tps');
 			return;
@@ -191,26 +211,26 @@ function _getQueueRouteMMS(route, handle) {
 function _getQueueRouteGCM(route, handle) {
 	try {
 
-		if (conf.sms.send >= conf.sms.tps) {
-			console.log('sms tps over!! send [' + conf.sms.send + '>=' + conf.sms.tps + '] tps');
+		if (conf.gcm.send >= conf.gcm.tps) {
+			console.log('gcm tps over!! send [' + conf.gcm.send + '>=' + conf.gcm.tps + '] tps');
 			return;
 		}
 		else {
 			db.beginTransaction(function(err) {
 				if (err) throw err;
 	
-				sql = 'select * from push_sms ' + 
+				sql = 'select * from push_gcm ' + 
 											'where (status is null or status = ?) ' + 
 											  'and maximum_retry_cnt > attempted_retry_cnt ' +
 											  'and target = ? ' +
-											'limit ' + conf.sms.tps;
-				arg = [ 'fail', 'SMS' ];
+											'limit ' + conf.gcm.tps;
+				arg = [ 'fail', 'GCM' ];
 				db.query(sql, arg, function(err, rows) {
 					if (err) throw err;
 	
 					console.log('select rows.length = ['+rows.length+']');
 					for (var i = 0; i < rows.length; i++) {
-						sql = 'update push_sms set status = ?, requested_at = ? where tid = ?';
+						sql = 'update push_gcm set status = ?, requested_at = ? where tid = ?';
 						arg = [ 'requested', Date.now(), rows[i].tid, rows[i] ];
 						db.query(sql, arg, function(err, result) {
 						if (err) {
@@ -226,7 +246,7 @@ function _getQueueRouteGCM(route, handle) {
 								}
 								console.log('update success!');
 								// do send 
-								route(handle, 'SMS', arg[arg.length-1]);
+								route(handle, 'GCM', arg[arg.length-1]);
 							}); // end commit
 						}); // end update
 					} // end for
@@ -248,13 +268,59 @@ function _getQueueRouteAPNS(route, handle) {
 	return;
 }
 
-function _getQueueRouteUAN() {
+function _getQueueRouteUAN(route, handle) {
+	try {
+
+		if (conf.uan.send >= conf.uan.tps) {
+			console.log('uan tps over!! send [' + conf.uan.send + '>=' + conf.uan.tps + '] tps');
+			return;
+		}
+		else {
+			db.beginTransaction(function(err) {
+				if (err) throw err;
+	
+				sql = 'select * from push_direct ' + 
+											'where (status is null or status = ?) ' + 
+											  'and maximum_retry_cnt > attempted_retry_cnt ' +
+											'limit ' + conf.uan.tps;
+				arg = [ 'fail' ];
+				db.query(sql, arg, function(err, rows) {
+					if (err) throw err;
+	
+					console.log('select rows.length = ['+rows.length+']');
+					for (var i = 0; i < rows.length; i++) {
+						sql = 'update push_direct set status = ?, requested_at = ? where tid = ?';
+						arg = [ 'requested', Date.now(), rows[i].tid, rows[i] ];
+						db.query(sql, arg, function(err, result) {
+						if (err) {
+								db.rollback(function() {
+									throw err;
+								});
+							};
+							db.commit(function(err) {
+								if (err) {
+									db.rollback(function() {
+										throw err;
+									});
+								}
+								console.log('update success!');
+								// do send 
+								route(handle, 'UAN', arg[arg.length-1]);
+							}); // end commit
+						}); // end update
+					} // end for
+				}); // end select
+			}); // end transaction
+		} // end if idle
+	}
+	catch (err) {
+		throw err;
+	}
 	return;
 }
 
 
-
-
+////////////////////////////////////////////////////////////////////////////
 
 // exception
 process.on('uncaughtException', function(err) {

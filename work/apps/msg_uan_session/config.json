@@ -3,12 +3,19 @@
 		"host": "192.168.2.81",
 		"port": "8100"
 	},
-	"db": {
-		"host": "180.64.233.239",
-	  	"port": "3307",
-	  	"user": "mmsmo",
-	  	"password": "mmsmo.123",
-	  	"database": "mmsmo"
+	"database": {
+		"mysql": {
+			"host": "localhost",
+			"port": "3306",
+			"user": "root",
+			"password": "root.123",
+			"database": "pns_server",
+			"connectTimeout": "1000"
+		},
+		"redis": {
+			"host": "localhost",
+			"port": "6329"
+		}
 	},
 	"logLevel": "DBG",
 	"processName": "msg_uan_session"

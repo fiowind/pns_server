@@ -31,7 +31,7 @@ function start(socket, option) {
 
 	socket.on('connect', function() {
 		// skip
-		var uniq_key = '1234567890';
+		var uniq_key = '359106046051829';
 
 		sendStr = '1::' + uniq_key;
 		ret = sendToSocket(socket, sendStr);

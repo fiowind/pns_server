@@ -20,7 +20,8 @@ function pns_appclient_services_services_resources() {
 							),
             ),
         ),
-    );
+    )
+;
 
   return $resources;
 }
@@ -34,12 +35,13 @@ function pns_appclient_services_create($appclient) {
     $account = user_load(1);
     $user = $account;
 
+    error_log('appclient: '.json_encode($appclient));
     $appcli_raw = _services_arg_value($appclient, 'appcli_raw');
 
-		watchdog('appClient', 'appClient((json) : %appClient', array('%appClient' => json_encode($appcli_raw)));
-		error_log('appClient raw: '.json_encode($appcli_raw));
+	watchdog('appClient', 'appClient((json) : %appClient', array('%appClient' => json_encode($appcli_raw)));
+	error_log('appClient raw: '.json_encode($appcli_raw));
 
-		$ret_arr = _create_app_client($appcli_raw);
+	$ret_arr = _create_app_client($appcli_raw);
 
     return $ret_arr;
 }
@@ -48,6 +50,8 @@ function _create_app_client($appcli_arr) {
   global $user;
 	$ret_arr = array();
 	$ref_app_nid = 0;
+
+	error_log('app_id: '.$appcli_arr['app_id']);
 
 	$viewResult = views_get_view_result('list_application', 'panel_pane_2', $appcli_arr['app_id']);
 	if(count($viewResult) == 0) {
@@ -60,7 +64,6 @@ function _create_app_client($appcli_arr) {
 
 	$term = array();
 	$term_arr = array();
-
 	if(isset($appcli_arr['locale'])){
 			$term_arr = taxonomy_get_term_by_name($appcli_arr['locale'], 'locale');
 			$term['locale'] = !empty($temp_arr)? current($temp_arr)->tid: NULL;
@@ -72,10 +75,29 @@ function _create_app_client($appcli_arr) {
 	if(isset($appcli_arr['device_brand'])){
 			$term_arr = taxonomy_get_term_by_name($appcli_arr['device_brand'], 'device_brand');
 			$term['device_brand'] = !empty($temp_arr)? current($temp_arr)->tid: NULL;
-	} 
+	}
 
+	// device model이 있을 경우, 기존 device model을 추가하고 이를 reference하도록 함
+	if(isset($appcli_arr['device_model'])) {
+
+		$viewResult = views_get_view_result('list_device_model', 'panel_pane_1', $appcli_arr['device_model']);
+		if(count($viewResult) == 0) { // 해당 모델이 없을 경우
+			$deviceModel = new stdClass();
+			$deviceModel->title = $appcli_arr['device_model'];
+			$deviceModel->uid = $user->uid;
+			$deviceModel->type = "device_model";
+			$deviceModel->language = "und";
+			node_save($deviceModel);
+
+			$ref_device_model = $deviceModel->nid;
+		} else { // 해당 모델이 존재할 경우
+			$ref_device_model = $viewResult[0]->nid;
+		}
+
+	}
+
+	// App Client Save
 	$appClient = new stdClass();
-	$appClient->title = "appcli_arr_";
 	$appClient->uid = $user->uid;
 	$appClient->type ="app_client";
 	$appClient->language ="und";
@@ -98,10 +120,12 @@ function _create_app_client($appcli_arr) {
 	if(isset($term['device_brand'])) { 
 		$appClient->field_device_brand['und'][0]['tid'] = $term['device_brand'];
 	}
+	if(isset($ref_device_model)){
+		$appClient->field_ref_device_model['und'][0]['target_id'] = $ref_device_model;
+	}
 
-	watchdog('appClient', 'appClient((json) : %appClient', array('%appClient' => json_encode($appClient)));
 	node_save($appClient);
-  $ret_arr['result'] = 'success';
+  	$ret_arr['result'] = 'success';
 
 	return $ret_arr;
 }

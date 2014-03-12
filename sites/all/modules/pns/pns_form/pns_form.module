@@ -12,4 +12,120 @@ function pns_form_init() {
   }
 }
 
+function pns_form_cron() {
+}
+
+function pns_form_cronapi($op, $function = NULL) {
+  switch($op) {
+    case 'list':
+      return array(
+        'check_and_move_push_channel' => 'check_and_move_push_channel',
+      );
+
+    case 'rule':
+      switch($function) {
+        case 'check_and_move_push_channel': return '* * * * *';
+      }
+      break;
+    case 'execute':
+      switch($function) {
+        case 'check_and_move_push_channel':
+          _check_and_move_push_channel();
+          break;
+      }
+      break;
+  }
+}
+
+function _check_and_move_push_channel(){
+	$maximum_retry_cnt = 5;
+
+	$status_failed = 'failed';
+	$status_requested = 'requested';
+	$status_moved = 'moved';
+	$status_blocked = 'blocked';
+
+	//find direct and move them to gcm
+	$view_result = views_get_view_result('push_direct', 'panel_pane_1',$status_failed);
+
+	foreach($view_result as $item){
+		$old_entity = entity_load('data_push_direct',array('0' => $item->tid));
+		$old_entity = array_shift($old_entity);
+
+		if(isset($old_entity->gcm_api_key) && isset($old_entity->push_token)){
+			//update existing entity's status
+			$old_entity->status = $status_moved;
+			entity_save('data_push_direct', $old_entity);
+
+			//insert new gcm
+			$new_entity = new stdClass();
+			$new_entity->entity_type = 'data_push_gcm';
+			$new_entity->data_table = 'push_gcm';
+
+			$new_entity->target = 'GCM';
+			$new_entity->api_key = $old_entity->gcm_api_key;
+			$new_entity->push_token = $old_entity->push_token;
+			$new_entity->maximum_retry_cnt = $maximum_retry_cnt;
+
+			$new_entity->url = str_replace("/direct/", "/gcm/",$old_entity->url);
+
+			$new_entity->requested_at = $old_entity->requested_at;
+			$new_entity->scheduled_at = $old_entity->scheduled_at;
+			$new_entity->status = $status_requested;
+
+			$new_entity->sms_sender_mdn = $old_entity->sms_sender_mdn;
+			$new_entity->sms_callback_mdn = $old_entity->sms_callback_mdn;
+			$new_entity->sms_receiver_mdn = $old_entity->sms_receiver_mdn;
+			$new_entity->sms_text = $old_entity->sms_text;
+			
+			$new_entity->field_ref_campaign['und'][0]['target_id'] = $old_entity->field_ref_campaign['und'][0]['target_id'];
+			$new_entity->field_ref_app_client['und'][0]['target_id'] = $old_entity->field_ref_app_client['und'][0]['target_id'];
+
+			entity_save('data_push_gcm', $new_entity);
+		}else{
+			$old_entity->status = $status_blocked;
+			entity_save('data_push_direct', $old_entity);
+		}
+	}
+	
+	//find gcm and move them to sms
+	$view_result = views_get_view_result('push_gcm', 'panel_pane_2', $status_failed);
+
+	foreach($view_result as $item){
+		$old_entity = entity_load('data_push_gcm',array('0' => $item->tid));
+		$old_entity = array_shift($old_entity);
+
+		if(isset($old_entity->sms_receiver_mdn) && isset($old_entity->sms_text)){
+			//update existing entity's status
+			$old_entity->status = $status_moved;
+			entity_save('data_push_gcm', $old_entity);
+
+			//insert new gcm
+			$new_entity = new stdClass();
+			$new_entity->entity_type = 'data_push_sms';
+			$new_entity->data_table = 'push_sms';
+
+			$new_entity->target = 'SMS';
+			$new_entity->maximum_retry_cnt = $maximum_retry_cnt;
+
+			$new_entity->requested_at = $old_entity->requested_at;
+			$new_entity->scheduled_at = $old_entity->scheduled_at;
+			$new_entity->status = $status_requested;
+
+			$new_entity->sender_mdn = $old_entity->sms_sender_mdn;
+			$new_entity->callback_mdn = $old_entity->sms_callback_mdn;
+			$new_entity->receiver_mdn = $old_entity->sms_receiver_mdn;
+			$new_entity->text = $old_entity->sms_text;
+			
+			$new_entity->field_ref_campaign['und'][0]['target_id'] = $old_entity->field_ref_campaign['und'][0]['target_id'];
+			$new_entity->field_ref_app_client['und'][0]['target_id'] = $old_entity->field_ref_app_client['und'][0]['target_id'];
+
+			entity_save('data_push_sms', $new_entity);
+		}else{
+			$old_entity->status = $status_blocked;
+			entity_save('data_push_gcm', $old_entity);
+		}
+	}
+}
+
 ?>
