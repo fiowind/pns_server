@@ -1,0 +1,11 @@
+name = PNS Ajax
+description = 
+package = PNS
+core = 7.x
+
+; Information added by drupal.org packaging script on 2012-03-28
+version = "7.x"
+core = "7.x"
+project = "PNS"
+datestamp = "1332962446"
+

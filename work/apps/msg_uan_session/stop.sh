@@ -7,7 +7,7 @@ echo " "
 echo "*** try to stop 'node msg_uan_session.js' ***"
 
 if ( $uaxprocess ) then
-	kill -9 $uaxprocess
+	kill -15 $uaxprocess
 	echo "    $uaxprocess killed success."
 else
 	echo "    Cannot find node 'msg_uan_session.js' process. Please check."

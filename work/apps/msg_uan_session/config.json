@@ -1,6 +1,6 @@
 {
 	"server": {
-		"host": "192.168.2.81",
+		"host": "pns.uangel.com",
 		"port": "8100"
 	},
 	"database": {

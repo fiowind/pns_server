@@ -41,7 +41,7 @@ function _check_and_move_push_channel(){
 	$maximum_retry_cnt = 5;
 
 	$status_failed = 'failed';
-	$status_requested = 'requested';
+	$status_requesting = 'requesting';
 	$status_moved = 'moved';
 	$status_blocked = 'blocked';
 
@@ -66,12 +66,13 @@ function _check_and_move_push_channel(){
 			$new_entity->api_key = $old_entity->gcm_api_key;
 			$new_entity->push_token = $old_entity->push_token;
 			$new_entity->maximum_retry_cnt = $maximum_retry_cnt;
+			$new_entity->attempted_retry_cnt = 0;
 
 			$new_entity->url = str_replace("/direct/", "/gcm/",$old_entity->url);
 
 			$new_entity->requested_at = $old_entity->requested_at;
 			$new_entity->scheduled_at = $old_entity->scheduled_at;
-			$new_entity->status = $status_requested;
+			$new_entity->status = $status_requesting;
 
 			$new_entity->sms_sender_mdn = $old_entity->sms_sender_mdn;
 			$new_entity->sms_callback_mdn = $old_entity->sms_callback_mdn;
@@ -107,10 +108,11 @@ function _check_and_move_push_channel(){
 
 			$new_entity->target = 'SMS';
 			$new_entity->maximum_retry_cnt = $maximum_retry_cnt;
+			$new_entity->attempted_retry_cnt = 0;
 
 			$new_entity->requested_at = $old_entity->requested_at;
 			$new_entity->scheduled_at = $old_entity->scheduled_at;
-			$new_entity->status = $status_requested;
+			$new_entity->status = $status_requesting;
 
 			$new_entity->sender_mdn = $old_entity->sms_sender_mdn;
 			$new_entity->callback_mdn = $old_entity->sms_callback_mdn;

@@ -9,22 +9,23 @@ function pns_appclient_services_services_resources() {
             'help' => 'Create an appclient',
             'callback' => 'pns_appclient_services_create',
             'access callback' => 'pns_appclient_services_access',
-						'args' => array(
-							array(
-								'name' => 'appclient',
-								'optional' => FALSE,
-								'source' => 'data',
-								'description' => 'The node data to create',
-								'type' => 'array',
-								),
-							),
-            ),
-        ),
+			'args' => array(
+				array(
+					'name' => 'appclient',
+					'optional' => FALSE,
+					'source' => 'data',
+					'description' => 'The node data to create',
+					'type' => 'array',
+					),
+				),
+         ), // create
+
+     	), // app client
     )
 ;
 
   return $resources;
-}
+} 
 
 function pns_appclient_services_access() {
     return TRUE;
@@ -96,52 +97,63 @@ function _create_app_client($appcli_arr) {
 
 	}
 
-	// App Client Save
-	$appClient = new stdClass();
-	$appClient->uid = $user->uid;
-	$appClient->type ="app_client";
-	$appClient->language ="und";
-	$appClient->field_app_version['und'][0]['value'] = isset($appcli_arr['app_version'])? $appcli_arr['app_version']: '0';
-	$appClient->field_push_token['und'][0]['value'] = isset($appcli_arr['push_token'])? $appcli_arr['push_token']: '';
-	$appClient->field_uuid['und'][0]['value'] = isset($appcli_arr['uuid'])? $appcli_arr['uuid']: '';
-	$appClient->field_mdn['und'][0]['value'] = isset($appcli_arr['mdn'])? $appcli_arr['mdn']: '';
-	$appClient->field_os_version['und'][0]['value'] = isset($appcli_arr['os_version'])? $appcli_arr['os_version']: 0;
-	$appClient->field_resolution_width['und'][0]['value'] = isset($appcli_arr['resolution_width'])? $appcli_arr['resolution_width']: 0;
-	$appClient->field_resolution_height['und'][0]['value'] = isset($appcli_arr['resolution_height'])? $appcli_arr['resolution_height']: 0;
-	$appClient->field_device_id['und'][0]['value'] = isset($appcli_arr['device_id'])? $appcli_arr['device_id']: '';
-	$appClient->field_ref_app['und'][0]['target_id'] = $ref_app_nid;
+	$viewResult = views_get_view_result('list_app_client', 'panel_pane_3', $appcli_arr['device_id'], $ref_app_nid);
 
-	if(isset($term['locale'])) { 
-		$appClient->field_locale['und'][0]['tid'] = $term['locale']; 
+	// Only created app client in case same app client doesn't exist 
+	if(count($viewResult) == 0) {
+		// App Client Save
+		$appClient = new stdClass();
+		$appClient->uid = $user->uid;
+		$appClient->type ="app_client";
+		$appClient->language ="und";
+		$appClient->field_app_version['und'][0]['value'] = isset($appcli_arr['app_version'])? $appcli_arr['app_version']: '0';
+		$appClient->field_push_token['und'][0]['value'] = isset($appcli_arr['push_token'])? $appcli_arr['push_token']: '';
+		$appClient->field_uuid['und'][0]['value'] = isset($appcli_arr['uuid'])? $appcli_arr['uuid']: '';
+		$appClient->field_mdn['und'][0]['value'] = isset($appcli_arr['mdn'])? $appcli_arr['mdn']: '';
+		$appClient->field_os_version['und'][0]['value'] = isset($appcli_arr['os_version'])? $appcli_arr['os_version']: 0;
+		$appClient->field_resolution_width['und'][0]['value'] = isset($appcli_arr['resolution_width'])? $appcli_arr['resolution_width']: 0;
+		$appClient->field_resolution_height['und'][0]['value'] = isset($appcli_arr['resolution_height'])? $appcli_arr['resolution_height']: 0;
+		$appClient->field_device_id['und'][0]['value'] = isset($appcli_arr['device_id'])? $appcli_arr['device_id']: '';
+		$appClient->field_ref_app['und'][0]['target_id'] = $ref_app_nid;
+
+		if(isset($term['locale'])) { 
+			$appClient->field_locale['und'][0]['tid'] = $term['locale']; 
+		}
+		if(isset($term['operating_system'])) { 
+			$appClient->field_operating_system['und'][0]['tid'] = $term['operating_system'];
+		}
+		if(isset($term['device_brand'])) { 
+			$appClient->field_device_brand['und'][0]['tid'] = $term['device_brand'];
+		}
+		if(isset($ref_device_model)){
+			$appClient->field_ref_device_model['und'][0]['target_id'] = $ref_device_model;
+		}
+		node_save($appClient);
 	}
-	if(isset($term['operating_system'])) { 
-		$appClient->field_operating_system['und'][0]['tid'] = $term['operating_system'];
-	}
-	if(isset($term['device_brand'])) { 
-		$appClient->field_device_brand['und'][0]['tid'] = $term['device_brand'];
-	}
-	if(isset($ref_device_model)){
-		$appClient->field_ref_device_model['und'][0]['target_id'] = $ref_device_model;
-	}
-	node_save($appClient);
 
 	if(isset($appClient->nid)) {
 		_create_device_connection($appcli_arr['device_id'], $ref_app_nid);
 	}
-	
 	$ret_arr['result'] = 'success';
 
 	return $ret_arr;
 }
 
 function _create_device_connection($device_id, $ref_app_nid) {
+
+	$viewResult = views_get_view_result('device_connection', 'panel_pane_1', $device_id);
+	if(count($viewResult) > 0) {
+		return;
+	}
 	
 	$entity = new stdClass();
 	$entity->entity_type = 'data_device_connection';
 	$entity->data_table = 'device_connection';
 
 	$entity->device_id = $device_id;
+	$entity->is_connected = 'false';
 	$entity->field_ref_app_client['und'][0]['target_id'] = $ref_app_nid;
 
 	entity_save('data_device_connection', $entity);
 }
+

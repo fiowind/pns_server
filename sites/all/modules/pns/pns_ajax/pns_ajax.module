@@ -1,0 +1,38 @@
+<?php
+// ---------------------------------------------------------------------------
+// Drupal hooks.
+ 
+/**
+ *  Implementation of hook_menu()
+ */
+function pns_ajax_menu() {
+
+  $items['push/%/%/%'] = array( 
+      'title' => 'Read Confirm',
+      'page callback' => 'pns_ajax_read_confirm',
+      'page arguments' => array(1,2,3),
+      'access callback' => TRUE,
+      'type' => MENU_CALLBACK,
+  );
+  return $items;
+} 
+
+function pns_ajax_read_confirm($campaign_id, $channel, $app_client_id) {
+
+	$viewResult = views_get_view_result('message_used_for_campaign', 'panel_pane_1', $campaign_id);
+
+	switch($channel){
+		case 'direct':
+			// html render for direct channel
+			$output = $viewResult[0]->field_field_rich_message[0]['rendered']['#markup'];
+			break;
+
+		default:
+			$output = $viewResult[0]->field_field_rich_message[0]['rendered']['#markup'];
+			break;
+	}
+	print $output;
+	exit;
+
+}
+

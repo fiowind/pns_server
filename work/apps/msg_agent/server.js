@@ -171,18 +171,25 @@ function _getQueueRouteSMS(route, handle) {
 				if (err) throw err;
 	
 				sql = 'select * from push_sms ' + 
-											'where (status is null or status = ?) ' + 
+											'where (status is null or status = ? or status = ?) ' + 
 											  'and maximum_retry_cnt > attempted_retry_cnt ' +
 											  'and target = ? ' +
 											'limit ' + conf.sms.tps;
-				arg = [ 'fail', 'SMS' ];
+				arg = [ 'requesting', 'failed', 'SMS' ];
 				db.query(sql, arg, function(err, rows) {
 					if (err) throw err;
 	
 					log.info('[SMS] select rows.length = ['+rows.length+']');
 					for (var i = 0; i < rows.length; i++) {
-						sql = 'update push_sms set status = ?, requested_at = ? where tid = ?';
-						arg = [ 'requested', Date.now(), rows[i].tid, rows[i] ];
+						// do send 
+						route(handle, 'SMS', rows[i]);
+
+						sql = 'update push_sms set status = ? where tid = ?';
+						if (rows[i].status === 'requesting') 
+							arg = [ 'requested', rows[i].tid, rows[i] ];
+						else
+							arg = [ 'retrying', rows[i].tid, rows[i] ];
+
 						db.query(sql, arg, function(err, result) {
 						if (err) {
 								db.rollback(function() {
@@ -196,8 +203,6 @@ function _getQueueRouteSMS(route, handle) {
 									});
 								}
 								log.debug('update success!');
-								// do send 
-								route(handle, 'SMS', arg[arg.length-1]);
 							}); // end commit
 						}); // end update
 					} // end for
@@ -226,18 +231,25 @@ function _getQueueRouteGCM(route, handle) {
 				if (err) throw err;
 	
 				sql = 'select * from push_gcm ' + 
-							  'where (status is null or status = ?) ' + 
+							  'where (status is null or status = ? or status = ?) ' + 
 							    'and maximum_retry_cnt > attempted_retry_cnt ' +
 							    'and target = ? ' +
 							  'limit ' + conf.gcm.tps;
-				arg = [ 'fail', 'GCM' ];
+				arg = [ 'requesting', 'failed', 'GCM' ];
 				db.query(sql, arg, function(err, rows) {
 					if (err) throw err;
 	
 					log.info('[GCM] select rows.length = ['+rows.length+']');
 					for (var i = 0; i < rows.length; i++) {
-						sql = 'update push_gcm set status = ?, requested_at = ? where tid = ?';
-						arg = [ 'requested', Date.now(), rows[i].tid, rows[i] ];
+						// do send 
+						route(handle, 'GCM', rows[i]);
+
+						sql = 'update push_gcm set status = ? where tid = ?';
+						if (rows[i].status === 'requesting') 
+							arg = [ 'requested', rows[i].tid, rows[i] ];
+						else
+							arg = [ 'retrying', rows[i].tid, rows[i] ];
+
 						db.query(sql, arg, function(err, result) {
 						if (err) {
 								db.rollback(function() {
@@ -251,8 +263,6 @@ function _getQueueRouteGCM(route, handle) {
 									});
 								}
 								log.debug('update success!');
-								// do send 
-								route(handle, 'GCM', arg[arg.length-1]);
 							}); // end commit
 						}); // end update
 					} // end for
@@ -286,17 +296,24 @@ function _getQueueRouteUAN(route, handle) {
 				if (err) throw err;
 	
 				sql = 'select * from push_direct ' + 
-							  'where (status is null or status = ?) ' + 
+							  'where (status is null or status = ? or status = ?) ' + 
 								'and maximum_retry_cnt > attempted_retry_cnt ' +
 							  'limit ' + conf.uan.tps;
-				arg = [ 'fail' ];
+				arg = [ 'requesting', 'failed' ];
 				db.query(sql, arg, function(err, rows) {
 					if (err) throw err;
 	
 					log.info('[UAN] select rows.length = ['+rows.length+']');
 					for (var i = 0; i < rows.length; i++) {
-						sql = 'update push_direct set status = ?, requested_at = ? where tid = ?';
-						arg = [ 'requested', Date.now(), rows[i].tid, rows[i] ];
+						// do send 
+						route(handle, 'UAN', rows[i]);
+
+						sql = 'update push_direct set status = ? where tid = ?';
+						if (rows[i].status === 'requesting') 
+							arg = [ 'requested', rows[i].tid, rows[i] ];
+						else
+							arg = [ 'retrying', rows[i].tid, rows[i] ];
+
 						db.query(sql, arg, function(err, result) {
 						if (err) {
 								db.rollback(function() {
@@ -310,14 +327,12 @@ function _getQueueRouteUAN(route, handle) {
 									});
 								}
 								log.debug('update success!');
-								// do send 
-								route(handle, 'UAN', arg[arg.length-1]);
 							}); // end commit
 						}); // end update
 					} // end for
 				}); // end select
 			}); // end transaction
-		} // end if idle
+		} // end else
 	}
 	catch (err) {
 		throw err;

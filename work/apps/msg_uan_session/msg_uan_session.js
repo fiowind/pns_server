@@ -91,20 +91,19 @@ else {
 			socket.on('end', function() {
 	
 				process.send(-1);
-				log.info('['+socket.deviceID+'] : client disconneted.');
+				log.info('['+socket.deviceID+'] : client disconnected.');
+				_updateDeviceConnection(socket.deviceID, 'false');
+
+				delete sockets[socket.deviceID];
+
+				if (socket.deviceID) {
+					socket.deviceID = false;
+					socket.end();
+				}
 	
 				// session status delete
 				//store.srem(socket.deviceID);
 	
-				delete sockets[socket.deviceID];
-	
-				if (socket.deviceID) {
-					_updateDeviceConnection(socket.deviceID, 'false', function(err, result) {
-						if (err) throw err;
-					});
-					socket.deviceID = false;
-					socket.end();
-				}
 			});
 	
 			socket.on('data', function(buf) {
@@ -123,38 +122,43 @@ else {
 					temp = recvStr.split(':');
 					socket.deviceID = temp[2];  
 
-					_selectDeviceConnection(socket.deviceID, function(err, rows) {
-						if (err) {
-							log.error('['+socket.deviceID+'] : _selectDeviceConnection error : ' + err);
-							throw err;
-						}
-
+					var sql = 'select * from device_connection where device_id = ?';
+					var arg = [ socket.deviceID ];
+					db.query(sql, arg, function(err, rows) {
+						
 						if (rows.length) {
+							/*
 							if (rows[0].is_connected === 'true') {
 								log.info('['+socket.deviceID+'] : already conneted. force disconnect.');
-								//socket.close();
+								socket.deviceID = false;
+								socket.end();
 							}
 							else {
-									log.info('seokeun0');
+							*/
 								sockets[socket.deviceID] = socket;
-								_updateDeviceConnection(socket.deviceID, 'true', function(err, result) {
-									if (err) throw err;
-
-									//store.sadd(socket.deviceID);
-									
-									log.info('seokeun1');
-									log.info('['+socket.deviceID+'] : cleint conneted.');
-									log.info('seokeun2');
+								log.info('['+socket.deviceID+'] : cleint conneted.');
 	
-									sendStr = '1::' + process.pid + '|' + date.getTime(); 
-									ret = _sendToSocket(socket, sendStr);
-									if (!ret) {
-										return;
-									}
-								});
+								sendStr = '1::' + process.pid + '|' + date.getTime(); 
+								ret = _sendToSocket(socket, sendStr);
+								if (!ret) {
+									return;
+								}
+								//store.sadd(socket.deviceID);
+
+								// is_connected = true
+								_updateDeviceConnection(socket.deviceID, 'true');
+
+								// offline message resend
+								_selectPushDirect(socket);
+							/*
 							}
+							*/
 						}
-					});
+						else {
+							socket.end();
+						}
+
+					})
 				}
 				else if (recvStr[0] === '2') {
 					log.debug('['+socket.deviceID+'] : heartbeat recv.');
@@ -176,14 +180,10 @@ else {
 					ack.errCode = temp2[1];
 	
 					if (parseInt(ack.errCode, 10) === 0) {
-						_updatePushDirect(ack.tid, 'success', function(err, result) {
-							if (err) throw err;
-						});
+						_updatePushDirect(socket.deviceID, ack.tid, 'success');
 					}
 					else {
-						_updatePushDirect(ack.tid, 'fail', function(err, result) {
-							if (err) throw err;
-						});
+						_updatePushDirect(socket.deviceID, ack.tid, 'failed');
 					}
 				}
 				else {
@@ -195,6 +195,7 @@ else {
 			});
 	
 			socket.on('push', function(data) {
+
 				temp = JSON.parse(data);
 	
 				var sendData = {};
@@ -203,7 +204,7 @@ else {
 				sendData.text = escape(temp.text);
 				sendData.url = escape(temp.url);
 	
-				sendStr = '5:::{"name":"push", "args":["server", "' + JSON.stringify(sendData) + '"]}';
+				sendStr = '5:::{"name":"push", "args":["server", ' + JSON.stringify(sendData) + ']}';
 				ret = _sendToSocket(socket, sendStr);
 				if (!ret) {
 					// error 
@@ -212,6 +213,21 @@ else {
 	
 			socket.on('error', function(err) {
 				log.error('[erro] : socket.on error : ' + err);
+				if (err.code === 'ECONNRESET') {
+					process.send(-1);
+					log.info('['+socket.deviceID+'] : client disconneted.');
+	
+					// session status delete
+					//store.srem(socket.deviceID);
+	
+					delete sockets[socket.deviceID];
+	
+					if (socket.deviceID) {
+						_updateDeviceConnection(socket.deviceID, 'false');
+						socket.deviceID = false;
+						socket.end();
+					}
+				}
 			});
 		});
 	
@@ -227,6 +243,30 @@ else {
 	process.on('uncaughtException', function(err) {
 		log.info('Caught exception: ' + err);
 	});
+
+	/*
+	// kill -2
+	process.on('SIGINT', function() {
+		conf.status.db = false;
+
+		setTimeout(function() {
+			db.end();
+			log.info('process exit.');
+			process.exit(0);
+		}, 1000);
+	});
+
+	// kill -15
+	process.on('SIGTERM', function() {
+		conf.status.db = false;
+
+		setTimeout(function() {
+			db.end();
+			log.info('process exit.');
+			process.exit(0);
+		}, 1000);
+	});
+	*/
 }
 
 function _sendToSocket(socket, msg) {
@@ -248,6 +288,7 @@ function _sendToSocket(socket, msg) {
 	}
 }
 
+/*
 function _selectDeviceConnection(deviceID, callback) {
 	try {
 		var sql = 'select * from device_connection where device_id = ?';
@@ -260,14 +301,26 @@ function _selectDeviceConnection(deviceID, callback) {
 		throw err;
 	}
 }
+*/
 
-function _updateDeviceConnection(deviceID, is_connected, callback) {
+function _updateDeviceConnection(deviceID, is_connected) {
 	try {
 		var sql = 'update device_connection set is_connected = ? ' +
 										 'where device_id = ?';
 		var arg = [ is_connected, deviceID ];
 		db.query(sql, arg, function(err, result) {
-			callback(err, result);
+        	if (err) {
+           		log.error('['+deviceID+'] _updateDeviceConnection error device_connection.device_id = [' + is_connected + '] : ' + err);
+        	}
+           //log.debug('['+deviceID+'] _updateDeviceConnection sucess push_gcm.device_id = [' + is_connected + '] : ' + JSON.stringify(result));
+
+			db.commit(function(err) {
+				if (err) {
+					db.rollback(function() {
+						throw err;
+					});
+				}
+			});
 		});
 	}
 	catch (err) {
@@ -275,14 +328,75 @@ function _updateDeviceConnection(deviceID, is_connected, callback) {
 	}
 }
 
-function _updatePushDirect(tid, resStatus, callback) {
+function _updatePushDirect(deviceID, tid, resStatus) {
 	try {
-		var sql = 'update push_direct set status = ?, sent_at = ?, attempted_retry_cnt = + 1, last_attemped_at = ? ' +
+		var now = (Date.now()).toString().slice(0,10);
+		var sql = 'update push_direct set status = ?, sent_at = ?, attempted_retry_cnt = + 1, last_attempted_at = ? ' +
 								   'where tid = ?';
-		var arg = [ resStatus, Date.now(), Date.now(), tid ];
+		var arg = [ resStatus, now, now, tid ];
 		db.query(sql, arg, function(err, result) {
-			callback(err, result);
+        	if (err) {
+           		log.error('['+deviceID+'] _updatePushDirect error push_direct.tid = [' + tid + '] : ' + err);
+               	throw err;
+        	}
+           //log.debug('['+deviceID+'] _updatePushDirect sucess push_direct.tid = [' + tid + '] : ' + JSON.stringify(result));
+           
+			db.commit(function(err) {
+				if (err) {
+					db.rollback(function() {
+						throw err;
+					});
+				}
+			});
 		});
+	}
+	catch (err) {
+		throw err;
+	}
+}
+
+function _selectPushDirect(socket) {
+
+	try {
+		//db.beginTransaction(function(err) {
+			//if (err) throw err;
+
+			var sql = 'select * from push_direct ' + 
+						  'where device_id = ? ' + 
+							'and status = ? ';
+			var arg = [ socket.deviceID, 'offline' ];
+			db.query(sql, arg, function(err, rows) {
+				if (err) throw err;
+
+				log.info('['+socket.deviceID+'] select rows.length = ['+rows.length+']');
+				for (var i = 0; i < rows.length; i++) {
+					// do send 
+					socket.emit('push', JSON.stringify(rows[i]));
+
+					sql = 'update push_direct set status = ?, requested_at = ? where tid = ?';
+					if (rows[i].status === 'requesting') 
+						arg = [ 'requested', Date.now(), rows[i].tid, socket, rows[i] ];
+					else
+						arg = [ 'retrying', Date.now(), rows[i].tid, socket, rows[i] ];
+
+					db.query(sql, arg, function(err, result) {
+						if (err) {
+							db.rollback(function() {
+								throw err;
+							});
+						};
+						db.commit(function(err) {
+							if (err) {
+								db.rollback(function() {
+									throw err;
+								});
+							}
+							log.debug('update success!');
+						}); // end commit
+					}); // end update
+				} // end for
+			}); // end select
+		//}); // end transaction
 	}
 	catch (err) {
 		throw err;

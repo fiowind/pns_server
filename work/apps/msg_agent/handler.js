@@ -13,35 +13,38 @@ var U2E = new Iconv('UTF-8', 'EUC-KR//TRANSLIT//IGNORE');
 
 function smsSender(data) {
 
-	log.debug('[SMS] data : ' + data);
-
 	try {
-		var urlStr = config.sms.url + '?' +
-					 'id=Svc' + '&' +
-					 'op=sendsms' + '&' +
-					 'smdn=' + data.sender_mdn + '&' +
-					 'rmdn=' + data.receiver_mdn + '&' +
-					 'call=' + data.callback_mdn + '&' +
-					 'msg=' + escape(U2E.convert(data.text).toString('binary'));
+		var urlStr = false;
+		var urlObj= false;
+		var option = false;
+		var req = false;
+
+		log.debug('[SMS] data : ' + JSON.stringify(data));
+
+		urlStr = config.sms.url + '?' +
+				 'id=Svc' + '&' +
+				 'op=sendsms' + '&' +
+				 'smdn=' + data.sender_mdn + '&' +
+				 'rmdn=' + data.receiver_mdn + '&' +
+				 'call=' + data.callback_mdn + '&' +
+				 'msg=' + escape(U2E.convert(data.text).toString('binary'));
 	
-		var urlObj = url.parse(urlStr);
+		urlObj = url.parse(urlStr);
 	
-		var option = {
+		option = {
 			hostname: urlObj.hostname,
 			port: urlObj.port,
 			path: urlObj.path,
 			method: 'GET'
 		};
 	
-		var req = http.request(option, function(res) {
+		req = http.request(option, function(res) {
 			log.debug('[SMS] STATUS: ' + res.statusCode);
 			log.debug('[SMS] HEADER: ' + JSON.stringify(res.headers));
 			res.setEncoding('utf8');
 	
 			if (parseInt(res.statusCode, 10) !== 200) {
-				_updateResult('fail', function(err, result) {
-					if (err) throw err;
-				});
+				_updateResult('failed', data.tid);
 				return;
 			}
 	
@@ -51,15 +54,11 @@ function smsSender(data) {
 	
 				if (chunk.toString() === 'RESULT=OK\n') {
 					// update success
-					_updateResult('success', function(err, result) {
-						if (err) throw err;
-					});
+					_updateResult('success', data.tid);
 				}
 				else {
 					// update fail
-					_updateResult('fail', function(err, result) {
-						if (err) throw err;
-					});
+					_updateResult('failed', data.tid);
 				}
 			});
 		});
@@ -71,12 +70,25 @@ function smsSender(data) {
 		conf.sms.send++;
 		req.end();
 	
-		function _updateResult(resStatus, callback) {
-			var sql = 'update push_sms set status = ?, sent_at = ?, attempted_retry_cnt = + 1, last_attemped_at = ? ' +
-															'where tid = ?';
-			var arg = [ resStatus, Date.now(), Date.now(), data.tid ];
+		function _updateResult(resStatus, tid) {
+			var now = (Date.now()).toString().slice(0,10);
+			var sql = 'update push_sms set status = ?, sent_at = ?, attempted_retry_cnt = + 1, last_attempted_at = ? ' +
+									'where tid = ?';
+			var arg = [ resStatus, now, now, tid ];
 			db.query(sql, arg, function(err, result) {
-					callback(err, result);
+				if (err) {
+					log.error('[SMS] _updateResult error push_sms.tid = [' + tid + '] : ' + err);
+					throw err;
+				}
+				log.info('[SMS] _updateResult sucess push_sms.tid = [' + tid + '] : ' + JSON.stringify(result));
+
+				db.commit(function(err) {
+					if (err) {
+						db.rollback(function() {
+							throw err;
+						});
+					}
+				});
 			});
 		}
 	}
@@ -89,7 +101,7 @@ exports.smsSender = smsSender;
 function mmsSender(data) {
 
 	try {
-		log.debug('[MMS] data : ' + data);
+		log.debug('[MMS] data : ' + JSON.stringify(data));
 	}
 	catch (err) {
 		throw err;
@@ -105,17 +117,13 @@ function gcmSender(data) {
 		var sender = false;
 		var regid = [];
 
-		log.debug('[GCM] data : ' + data);
+		log.debug('[GCM] data : ' + JSON.stringify(data));
 
 		message = new gcm.Message();
 		sender = new gcm.Sender(data.api_key);
 	
-		if (data.text) {
-			message.addDataWithKeyValue('text', data.text);
-		}
-		if (data.url) {
-			message.addDataWithKeyValue('url', data.url);
-		}
+		if (data.text) message.addDataWithKeyValue('text', data.text);
+		if (data.url) message.addDataWithKeyValue('url', data.url);
 	
 		//private static String COLLAPSE_KEY = String.valueOf(Math.random() % 100 + 1);
 		message.collapseKey = 'collapsKey';
@@ -128,7 +136,7 @@ function gcmSender(data) {
 		sender.sendNoRetry(message, regid, function(err, result) {	
 			if (err) {
 				log.error('[GCM] sender error: ' + err);
-				_updateResult('fail', data.tid);
+				_updateResult('failed', data.tid);
 				throw err;
 			}
 	
@@ -138,20 +146,29 @@ function gcmSender(data) {
 			}
 			else {
 				log.error('[GCM] sender result: ' + JSON.stringify(result));
-				_updateResult('fail', data.tid);
+				_updateResult('failed', data.tid);
 			}
 		});
 
 		function _updateResult(resStatus, tid) {
-			var sql = 'update push_gcm set status = ?, sent_at = ?, attempted_retry_cnt = + 1, last_attemped_at = ? ' +
+			var now = (Date.now()).toString().slice(0,10);
+			var sql = 'update push_gcm set status = ?, sent_at = ?, attempted_retry_cnt = + 1, last_attempted_at = ? ' +
 									'where tid = ?';
-			var arg = [ resStatus, Date.now(), Date.now(), tid ];
+			var arg = [ resStatus, now, now, tid ];
 			db.query(sql, arg, function(err, result) {
 				if (err) {
-					log.error('[GCM] _updateResult error tid = [' + tid + '] : ' + err);
+					log.error('[GCM] _updateResult error push_gcm.tid = [' + tid + '] : ' + err);
 					throw err;
 				}
-				log.info('[GCM] _updateResult sucess tid = [' + tid + '] : ' + JSON.stringify(result));
+				log.info('[GCM] _updateResult sucess push_gcm.tid = [' + tid + '] : ' + JSON.stringify(result));
+
+				db.commit(function(err) {
+					if (err) {
+						db.rollback(function() {
+							throw err;
+						});
+					}
+				});
 			});
 		}
 	}
@@ -168,47 +185,56 @@ function apnsSender(data) {
 exports.apnsSender = apnsSender;
 
 function uanSender(data) {
-	console.log('[UAN] data: ' + data);
 
 	try {
 		var sql = '';	
 
+		log.debug('[UAN] data : ' + JSON.stringify(data));
+
 		// select table device_connection
 		sql = 'select * from device_connection ' + 
-									'where device_id = ? ';
+					  'where device_id = ? ';
 		arg = [ data.device_id ];
 		db.query(sql, arg, function(err, rows) {
 			if (err) throw err;
 
 			if (rows.length <= 0) {
-				_updateResult('unknown', function(err, result) {
-					if (err) throw err;
-				});
+				_updateResult('unknown', data.tid);
 			}
 			else {
 				if (rows[0].is_connected === 'true') {
 					pub.publish('direct', JSON.stringify(data));
-					console.log('seokeun');
 				}
 				else {
-					_updateResult('offline', function(err, result) {
-						if (err) throw err;
-					});
+					_updateResult('offline', data.tid);
 				}
 			}
 		});
 
-		function _updateResult(resStatus, callback) {
+		function _updateResult(resStatus, tid) {
+			var now = (Date.now()).toString().slice(0,10);
 			var sql = 'update push_direct set status = ?, sent_at = ?, attempted_retry_cnt = + 1, last_attempted_at = ? ' +
-															'where tid = ?';
-			var arg = [ resStatus, Date.now(), Date.now(), data.tid ];
+									   'where tid = ?';
+			var arg = [ resStatus, now, now, tid ];
 			db.query(sql, arg, function(err, result) {
-					callback(err, result);
+				if (err) {
+					log.error('[UAN] _updateResult error push_direct.tid = [' + tid + '] : ' + err);
+					throw err;
+				}
+				log.info('[UAN] _updateResult sucess push_direct.tid = [' + tid + '] : ' + JSON.stringify(result));
+
+				db.commit(function(err) {
+					if (err) {
+						db.rollback(function() {
+							throw err;
+						});
+					}
+				});
 			});
 		}
 	}
 	catch (err) {
-		console.log('_selectDeviceConnection() catch error : ' + err);
+		log.error('_uanSender() catch error : ' + err);
 	}
 	
 	return;

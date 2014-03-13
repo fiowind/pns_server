@@ -6,11 +6,12 @@ function pns_form_node_submit($node, $form, &$form_state) {
 
 function _insert_direct_push_message($campaign_node){
 	$maximum_retry_cnt = 5;
+	$status_requesting = 'requesting';
 
 	$message_id = $campaign_node->field_ref_message['und'][0]['target_id'];
 	$message_node = node_load($message_id);
 
-	$url_prefix = 'http://pns.uangel.com/message/'.$message_id.'/direct/';
+	$url_prefix = 'http://pns.uangel.com/push/'.$campaign_node->nid.'/direct/';
 
 	$scheduled_at = time();
 	$schedule_option_term = taxonomy_term_load($campaign_node->field_schedule_option['und'][0]['tid']);
@@ -88,6 +89,7 @@ function _insert_direct_push_message($campaign_node){
 
 
 		//insert direct messages based on $app_clients
+		$total_app_client_count = 0;
 		foreach($app_clients as $client){
 			$entity = new stdClass();
 			$entity->entity_type = 'data_push_direct';
@@ -97,10 +99,11 @@ function _insert_direct_push_message($campaign_node){
 			$application_nid = $client->field_ref_app['und'][0]['target_id'];
 			$entity->app_id = $applications[$application_nid ]->field_app_id['und'][0]['safe_value'];
 			$entity->maximum_retry_cnt = $maximum_retry_cnt;
+			$entity->attempted_retry_cnt = 0;
 			$entity->url = $url_prefix.$client->nid;
 			$entity->requested_at = time();
 			$entity->scheduled_at = $scheduled_at;
-			$entity->status = 'requested';
+			$entity->status = $status_requesting;
 
 			if(isset($applications[$application_nid]->field_api_key['und'][0]['safe_value'])){
 				$entity->gcm_api_key = $applications[$application_nid]->field_api_key['und'][0]['safe_value'];
@@ -125,7 +128,13 @@ function _insert_direct_push_message($campaign_node){
 			$entity->field_ref_app_client['und'][0]['target_id'] = $client->nid;
 
 			entity_save('data_push_direct', $entity);
+
+			$total_app_client_count++;
 		}
+
+		$c_node = node_load($campaign_node->nid);
+		$c_node->field_total_app_client_count['und'][0]['value'] = $total_app_client_count;
+		node_save($c_node);
 	}
 }
 
