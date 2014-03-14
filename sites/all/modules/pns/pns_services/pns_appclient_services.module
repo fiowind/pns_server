@@ -52,8 +52,6 @@ function _create_app_client($appcli_arr) {
 	$ret_arr = array();
 	$ref_app_nid = 0;
 
-	error_log('app_id: '.$appcli_arr['app_id']);
-
 	$viewResult = views_get_view_result('list_application', 'panel_pane_2', $appcli_arr['app_id']);
 	if(count($viewResult) == 0) {
 		$retArray['result'] = "error";
@@ -91,7 +89,9 @@ function _create_app_client($appcli_arr) {
 			node_save($deviceModel);
 
 			$ref_device_model = $deviceModel->nid;
+
 		} else { // 해당 모델이 존재할 경우
+
 			$ref_device_model = $viewResult[0]->nid;
 		}
 
@@ -155,5 +155,6 @@ function _create_device_connection($device_id, $ref_app_nid) {
 	$entity->field_ref_app_client['und'][0]['target_id'] = $ref_app_nid;
 
 	entity_save('data_device_connection', $entity);
+
 }
 

@@ -18,21 +18,46 @@ function pns_ajax_menu() {
 } 
 
 function pns_ajax_read_confirm($campaign_id, $channel, $app_client_id) {
+	$appClient = node_load($app_client_id);
 
 	$viewResult = views_get_view_result('message_used_for_campaign', 'panel_pane_1', $campaign_id);
 
-	switch($channel){
-		case 'direct':
-			// html render for direct channel
-			$output = $viewResult[0]->field_field_rich_message[0]['rendered']['#markup'];
-			break;
+	if(count($viewResult) > 0) {
 
-		default:
-			$output = $viewResult[0]->field_field_rich_message[0]['rendered']['#markup'];
-			break;
+		switch($channel){
+			case 'direct':
+
+				// html render for direct channel
+				$output = $viewResult[0]->field_field_rich_message[0]['rendered']['#markup'];
+
+				// make status 'read' 
+				$viewResult = views_get_view_result('push_direct', 'panel_pane_2', $campaign_id, $app_client_id);
+				$entityArr = entity_load('data_push_direct', array($viewResult[0]->tid));
+				$entity = $entityArr[$viewResult[0]->tid];
+				$entity->status = 'read';
+				entity_save('data_push_direct', $entity);
+				break;
+
+			case 'gcm':
+				$output = $viewResult[0]->field_field_text_message[0]['rendered']['#markup'];
+				// make status 'read'
+				$viewResult = views_get_view_result('push_gcm', 'panel_pane_3', $campaign_id, $app_client_id);
+				$entityArr = entity_load('data_push_gcm', array($viewResult[0]->tid));
+				$entity = $entityArr[$viewResult[0]->tid];
+				$entity->status = 'read';
+				entity_save('data_push_gcm', $entity);
+				break;
+
+			default:
+				$output = $viewResult[0]->field_field_rich_message[0]['rendered']['#markup'];
+
+
+				break;
+		}
+
 	}
+
 	print $output;
 	exit;
-
 }
 

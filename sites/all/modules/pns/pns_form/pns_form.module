@@ -68,6 +68,7 @@ function _check_and_move_push_channel(){
 			$new_entity->maximum_retry_cnt = $maximum_retry_cnt;
 			$new_entity->attempted_retry_cnt = 0;
 
+			$new_entity->text = $old_entity->text;
 			$new_entity->url = str_replace("/direct/", "/gcm/",$old_entity->url);
 
 			$new_entity->requested_at = $old_entity->requested_at;

@@ -21,7 +21,7 @@ function smsSender(data) {
 
 		log.debug('[SMS] data : ' + JSON.stringify(data));
 
-		urlStr = config.sms.url + '?' +
+		urlStr = conf.sms.url + '?' +
 				 'id=Svc' + '&' +
 				 'op=sendsms' + '&' +
 				 'smdn=' + data.sender_mdn + '&' +

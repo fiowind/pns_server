@@ -100,7 +100,10 @@ function _insert_direct_push_message($campaign_node){
 			$entity->app_id = $applications[$application_nid ]->field_app_id['und'][0]['safe_value'];
 			$entity->maximum_retry_cnt = $maximum_retry_cnt;
 			$entity->attempted_retry_cnt = 0;
+			
+			$entity->text = $message_node->title;
 			$entity->url = $url_prefix.$client->nid;
+			
 			$entity->requested_at = time();
 			$entity->scheduled_at = $scheduled_at;
 			$entity->status = $status_requesting;

@@ -3,6 +3,7 @@ var ua_log = require('ualib').ua_log;
 global.conf = require('./config');
 global.log = new ua_log(conf.logLevel, conf.processName);
 
+var os = require('os');
 var net = require('net');
 var cluster = require('cluster');
 var numCPUs = parseInt(process.argv[2], 10) || require('os').cpus().length;
@@ -13,19 +14,27 @@ if (cluster.isMaster) {
 
 	try {
 		var total = 0;
-		/*
+		var workerCnt = 0;
 		var db = mysql.createConnection(conf.database.mysql);
-		*/
 
 		for (var i = 0; i < numCPUs; i++) {
 			cluster.fork();
+			workerCnt++;
 		}
 
 		cluster.on('exit', function(worker, code, signal) {
 			log.error('[exit] : worker = [' + worker.process.pid + '] exit.');
-			cluster.fork();
+			//cluster.fork();
+			var sessionIDLike = os.hostname() + '|' + conf.server.port + '|' + worker.process.pid + '%';
+	
+			//conf.status.db = false;
+			_updateDeviceConnection_all(sessionIDLike, function(err) {
+				if (err) throw err;
+				workerCnt--;
+			}); 
 		});
 
+		/*
 		Object.keys(cluster.workers).forEach(function(id) {
 			cluster.workers[id].on('message', function(msg) {
 				total += msg;
@@ -35,11 +44,35 @@ if (cluster.isMaster) {
 		setInterval(function() {
 			log.info('[cnt ] : ' + total + ' sockets.');
 		}, 5000);
+		*/
+
+		// kill -2
+		process.on('SIGINT', function() {
+			setInterval(function() {
+				if (workerCnt === 0) {
+					db.end();
+					log.info('process exit.');
+					process.exit(0);
+				}
+			}, 1000);
+		});
+
+		// kill -15
+		process.on('SIGTERM', function() {
+			setInterval(function() {
+				if (workerCnt === 0) {
+					db.end();
+					log.info('process exit.');
+					process.exit(0);
+				}
+			}, 1000);
+		});
 	}
 	catch (err) {
 		log.error('cluster.isMaster catch error : ' + err);
 		throw err;
 	}
+
 }
 else {
 
@@ -76,13 +109,12 @@ else {
 			var sendLen = 0;
 			var	sendStr = '7::9999+unknown protocol';
 			var temp = '';
-			var date = new Date();
 			var sessionID = '';
 	
 			socket.deviceID = '';
 			
 			socket.setMaxListeners(0);
-			process.send(1); 
+			//process.send(1); 
 	
 			socket.on('connection', function() {
 				// skip
@@ -90,9 +122,9 @@ else {
 	
 			socket.on('end', function() {
 	
-				process.send(-1);
+				//process.send(-1);
 				log.info('['+socket.deviceID+'] : client disconnected.');
-				_updateDeviceConnection(socket.deviceID, 'false');
+				_updateDeviceConnection(socket.deviceID, 'false', null);
 
 				delete sockets[socket.deviceID];
 
@@ -136,9 +168,11 @@ else {
 							else {
 							*/
 								sockets[socket.deviceID] = socket;
-								log.info('['+socket.deviceID+'] : cleint conneted.');
-	
-								sendStr = '1::' + process.pid + '|' + date.getTime(); 
+						 		log.info('['+socket.deviceID+'] : client conneted.');
+
+								sessionID = os.hostname() + '|' + conf.server.port + '|' + process.pid + '|' + Date.now();
+
+								sendStr = '1::' + sessionID;
 								ret = _sendToSocket(socket, sendStr);
 								if (!ret) {
 									return;
@@ -146,7 +180,7 @@ else {
 								//store.sadd(socket.deviceID);
 
 								// is_connected = true
-								_updateDeviceConnection(socket.deviceID, 'true');
+								_updateDeviceConnection(socket.deviceID, 'true', sessionID);
 
 								// offline message resend
 								_selectPushDirect(socket);
@@ -155,6 +189,7 @@ else {
 							*/
 						}
 						else {
+							//process.send(-1)
 							socket.end();
 						}
 
@@ -214,7 +249,7 @@ else {
 			socket.on('error', function(err) {
 				log.error('[erro] : socket.on error : ' + err);
 				if (err.code === 'ECONNRESET') {
-					process.send(-1);
+					//process.send(-1);
 					log.info('['+socket.deviceID+'] : client disconneted.');
 	
 					// session status delete
@@ -223,7 +258,7 @@ else {
 					delete sockets[socket.deviceID];
 	
 					if (socket.deviceID) {
-						_updateDeviceConnection(socket.deviceID, 'false');
+						_updateDeviceConnection(socket.deviceID, 'false', null);
 						socket.deviceID = false;
 						socket.end();
 					}
@@ -234,39 +269,40 @@ else {
 		server.listen(conf.server.port, function() {
 			log.info('server listen : [' + conf.server.port + ']');
 		});
+
+		setInterval(function() {
+			server.getConnections(function(err, count) {
+				log.info('worker process.pid = [' + process.pid + '], sockets = [' + count + ']');
+			});
+		}, 5000);
+
+		process.on('uncaughtException', function(err) {
+			log.info('Caught exception: ' + err);
+		});
+		
+		// kill -2
+		process.on('SIGINT', function() {
+			setTimeout(function() {
+					db.end();
+					process.exit(0);
+			}, 1000);
+		}); 
+	
+		// kill -15
+		process.on('SIGTERM', function() {
+			setTimeout(function() {
+					db.end();
+					process.exit(0);
+			}, 1000);
+		});
+		
 	}
 	catch (err) {
 		log.error('worker catch error : ' + err);
 		throw err;
 	}
 
-	process.on('uncaughtException', function(err) {
-		log.info('Caught exception: ' + err);
-	});
 
-	/*
-	// kill -2
-	process.on('SIGINT', function() {
-		conf.status.db = false;
-
-		setTimeout(function() {
-			db.end();
-			log.info('process exit.');
-			process.exit(0);
-		}, 1000);
-	});
-
-	// kill -15
-	process.on('SIGTERM', function() {
-		conf.status.db = false;
-
-		setTimeout(function() {
-			db.end();
-			log.info('process exit.');
-			process.exit(0);
-		}, 1000);
-	});
-	*/
 }
 
 function _sendToSocket(socket, msg) {
@@ -303,11 +339,11 @@ function _selectDeviceConnection(deviceID, callback) {
 }
 */
 
-function _updateDeviceConnection(deviceID, is_connected) {
+function _updateDeviceConnection(deviceID, is_connected, sessionID) {
 	try {
-		var sql = 'update device_connection set is_connected = ? ' +
+		var sql = 'update device_connection set is_connected = ?, session_id = ? ' +
 										 'where device_id = ?';
-		var arg = [ is_connected, deviceID ];
+		var arg = [ is_connected, sessionID, deviceID ];
 		db.query(sql, arg, function(err, result) {
         	if (err) {
            		log.error('['+deviceID+'] _updateDeviceConnection error device_connection.device_id = [' + is_connected + '] : ' + err);
@@ -320,6 +356,35 @@ function _updateDeviceConnection(deviceID, is_connected) {
 						throw err;
 					});
 				}
+			});
+		});
+	}
+	catch (err) {
+		throw err;
+	}
+}
+
+function _updateDeviceConnection_all(sessionID, callback) {
+	try {
+		log.debug('seokeun');
+		var sql = 'update device_connection set is_connected = ?, session_id = ? ' +
+										 'where session_id like ?';
+		var arg = [ 'false', null, sessionID ];
+		db.query(sql, arg, function(err, result) {
+        	if (err) {
+           		log.error('['+sessionID+'] _updateDeviceConnection_all error device_connection.is_sonnected = [false] : ' + err);
+				callback(err);
+        	}
+           log.debug(JSON.stringify(result));
+
+			db.commit(function(err) {
+				if (err) {
+					db.rollback(function() {
+						callback(err);
+					});
+				}
+				log.debug('ok');
+				callback(null);
 			});
 		});
 	}
@@ -373,11 +438,11 @@ function _selectPushDirect(socket) {
 					// do send 
 					socket.emit('push', JSON.stringify(rows[i]));
 
-					sql = 'update push_direct set status = ?, requested_at = ? where tid = ?';
+					sql = 'update push_direct set status = ? where tid = ?';
 					if (rows[i].status === 'requesting') 
-						arg = [ 'requested', Date.now(), rows[i].tid, socket, rows[i] ];
+						arg = [ 'requested', rows[i].tid, socket, rows[i] ];
 					else
-						arg = [ 'retrying', Date.now(), rows[i].tid, socket, rows[i] ];
+						arg = [ 'retrying', rows[i].tid, socket, rows[i] ];
 
 					db.query(sql, arg, function(err, result) {
 						if (err) {
