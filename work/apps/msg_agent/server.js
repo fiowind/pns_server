@@ -171,11 +171,11 @@ function _getQueueRouteSMS(route, handle) {
 				if (err) throw err;
 	
 				sql = 'select * from push_sms ' + 
-											'where (status is null or status = ? or status = ?) ' + 
-											  'and maximum_retry_cnt > attempted_retry_cnt ' +
-											  'and target = ? ' +
-											'limit ' + conf.sms.tps;
-				arg = [ 'requesting', 'failed', 'SMS' ];
+							  'where (status is null or status = ? or status = ?) ' + 
+							    'and maximum_retry_cnt > attempted_retry_cnt ' +
+							    'and target = ? ' +
+							  'limit ' + conf.sms.tps;
+				arg = [ 'requesting', 'retrying', 'SMS' ];
 				db.query(sql, arg, function(err, rows) {
 					if (err) throw err;
 	
@@ -188,8 +188,9 @@ function _getQueueRouteSMS(route, handle) {
 						if (rows[i].status === 'requesting') 
 							arg = [ 'requested', rows[i].tid, rows[i] ];
 						else
-							arg = [ 'retrying', rows[i].tid, rows[i] ];
+							arg = [ 'retried', rows[i].tid, rows[i] ];
 
+						var row = rows[i];
 						db.query(sql, arg, function(err, result) {
 						if (err) {
 								db.rollback(function() {
@@ -202,8 +203,8 @@ function _getQueueRouteSMS(route, handle) {
 										throw err;
 									});
 								}
-								log.debug('update success!');
-							}); // end commit
+								log.debug('update success!' + row.tid);
+							}, row); // end commit
 						}); // end update
 					} // end for
 				}); // end select
@@ -235,7 +236,7 @@ function _getQueueRouteGCM(route, handle) {
 							    'and maximum_retry_cnt > attempted_retry_cnt ' +
 							    'and target = ? ' +
 							  'limit ' + conf.gcm.tps;
-				arg = [ 'requesting', 'failed', 'GCM' ];
+				arg = [ 'requesting', 'retrying', 'GCM' ];
 				db.query(sql, arg, function(err, rows) {
 					if (err) throw err;
 	
@@ -248,7 +249,7 @@ function _getQueueRouteGCM(route, handle) {
 						if (rows[i].status === 'requesting') 
 							arg = [ 'requested', rows[i].tid, rows[i] ];
 						else
-							arg = [ 'retrying', rows[i].tid, rows[i] ];
+							arg = [ 'retried', rows[i].tid, rows[i] ];
 
 						db.query(sql, arg, function(err, result) {
 						if (err) {
@@ -297,22 +298,28 @@ function _getQueueRouteUAN(route, handle) {
 	
 				sql = 'select * from push_direct ' + 
 							  'where (status is null or status = ? or status = ?) ' + 
-								'and maximum_retry_cnt > attempted_retry_cnt ' +
+								'and maximum_retry_cnt >= attempted_retry_cnt ' +
 							  'limit ' + conf.uan.tps;
-				arg = [ 'requesting', 'failed' ];
+				arg = [ 'requesting', 'retrying' ];
 				db.query(sql, arg, function(err, rows) {
 					if (err) throw err;
 	
 					log.info('[UAN] select rows.length = ['+rows.length+']');
 					for (var i = 0; i < rows.length; i++) {
 						// do send 
-						route(handle, 'UAN', rows[i]);
+						if (rows[i].maximum_retry_cnt === rows[i].attempted_retry_cnt) {
+							sql = 'update push_direct set status = ? where tid = ?';
+							arg = [ 'failed', rows[i].tid, rows[i] ];
+						}
+						else {
+							route(handle, 'UAN', rows[i]);
 
-						sql = 'update push_direct set status = ? where tid = ?';
-						if (rows[i].status === 'requesting') 
-							arg = [ 'requested', rows[i].tid, rows[i] ];
-						else
-							arg = [ 'retrying', rows[i].tid, rows[i] ];
+							sql = 'update push_direct set status = ? where tid = ?';
+							if (rows[i].status === 'requesting') 
+								arg = [ 'requested', rows[i].tid, rows[i] ];
+							else
+								arg = [ 'retried', rows[i].tid, rows[i] ];
+						}
 
 						db.query(sql, arg, function(err, result) {
 						if (err) {

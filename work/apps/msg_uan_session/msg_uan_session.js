@@ -48,6 +48,10 @@ if (cluster.isMaster) {
 
 		// kill -2
 		process.on('SIGINT', function() {
+			Object.keys(cluster.workers).forEach(function(id) {
+				cluster.workers[id].kill('SIGINT');
+			});
+
 			setInterval(function() {
 				if (workerCnt === 0) {
 					db.end();
@@ -59,6 +63,10 @@ if (cluster.isMaster) {
 
 		// kill -15
 		process.on('SIGTERM', function() {
+			Object.keys(cluster.workers).forEach(function(id) {
+				cluster.workers[id].kill('SIGTERM');
+			});
+
 			setInterval(function() {
 				if (workerCnt === 0) {
 					db.end();
@@ -218,7 +226,7 @@ else {
 						_updatePushDirect(socket.deviceID, ack.tid, 'success');
 					}
 					else {
-						_updatePushDirect(socket.deviceID, ack.tid, 'failed');
+						_updatePushDirect(socket.deviceID, ack.tid, 'retrying');
 					}
 				}
 				else {
@@ -366,7 +374,6 @@ function _updateDeviceConnection(deviceID, is_connected, sessionID) {
 
 function _updateDeviceConnection_all(sessionID, callback) {
 	try {
-		log.debug('seokeun');
 		var sql = 'update device_connection set is_connected = ?, session_id = ? ' +
 										 'where session_id like ?';
 		var arg = [ 'false', null, sessionID ];
@@ -396,7 +403,7 @@ function _updateDeviceConnection_all(sessionID, callback) {
 function _updatePushDirect(deviceID, tid, resStatus) {
 	try {
 		var now = (Date.now()).toString().slice(0,10);
-		var sql = 'update push_direct set status = ?, sent_at = ?, attempted_retry_cnt = + 1, last_attempted_at = ? ' +
+		var sql = 'update push_direct set status = ?, sent_at = ?, attempted_retry_cnt = attempted_retry_cnt + 1, last_attempted_at = ? ' +
 								   'where tid = ?';
 		var arg = [ resStatus, now, now, tid ];
 		db.query(sql, arg, function(err, result) {
@@ -442,7 +449,7 @@ function _selectPushDirect(socket) {
 					if (rows[i].status === 'requesting') 
 						arg = [ 'requested', rows[i].tid, socket, rows[i] ];
 					else
-						arg = [ 'retrying', rows[i].tid, socket, rows[i] ];
+						arg = [ 'retried', rows[i].tid, socket, rows[i] ];
 
 					db.query(sql, arg, function(err, result) {
 						if (err) {

@@ -44,7 +44,10 @@ function smsSender(data) {
 			res.setEncoding('utf8');
 	
 			if (parseInt(res.statusCode, 10) !== 200) {
-				_updateResult('failed', data.tid);
+				if (data.maximum_retry_cnt === (data.attempted_retry_cnt + 1))
+					_updateResult('failed', data.tid);
+				else 
+					_updateResult('retrying', data.tid);
 				return;
 			}
 	
@@ -58,7 +61,10 @@ function smsSender(data) {
 				}
 				else {
 					// update fail
-					_updateResult('failed', data.tid);
+					if (data.maximum_retry_cnt === (data.attempted_retry_cnt + 1))
+						_updateResult('failed', data.tid);
+					else 
+						_updateResult('retrying', data.tid);
 				}
 			});
 		});
@@ -72,7 +78,7 @@ function smsSender(data) {
 	
 		function _updateResult(resStatus, tid) {
 			var now = (Date.now()).toString().slice(0,10);
-			var sql = 'update push_sms set status = ?, sent_at = ?, attempted_retry_cnt = + 1, last_attempted_at = ? ' +
+			var sql = 'update push_sms set status = ?, sent_at = ?, attempted_retry_cnt = attempted_retry_cnt + 1, last_attempted_at = ? ' +
 									'where tid = ?';
 			var arg = [ resStatus, now, now, tid ];
 			db.query(sql, arg, function(err, result) {
@@ -136,7 +142,10 @@ function gcmSender(data) {
 		sender.sendNoRetry(message, regid, function(err, result) {	
 			if (err) {
 				log.error('[GCM] sender error: ' + err);
-				_updateResult('failed', data.tid);
+				if (data.maximum_retry_cnt === (data.attempted_retry_cnt + 1))
+					_updateResult('failed', data.tid);
+				else 
+					_updateResult('retrying', data.tid);
 				throw err;
 			}
 	
@@ -146,13 +155,16 @@ function gcmSender(data) {
 			}
 			else {
 				log.error('[GCM] sender result: ' + JSON.stringify(result));
-				_updateResult('failed', data.tid);
+				if (data.maximum_retry_cnt === (data.attempted_retry_cnt + 1))
+					_updateResult('failed', data.tid);
+				else 
+					_updateResult('retrying', data.tid);
 			}
 		});
 
 		function _updateResult(resStatus, tid) {
 			var now = (Date.now()).toString().slice(0,10);
-			var sql = 'update push_gcm set status = ?, sent_at = ?, attempted_retry_cnt = + 1, last_attempted_at = ? ' +
+			var sql = 'update push_gcm set status = ?, sent_at = ?, attempted_retry_cnt = attempted_retry_cnt + 1, last_attempted_at = ? ' +
 									'where tid = ?';
 			var arg = [ resStatus, now, now, tid ];
 			db.query(sql, arg, function(err, result) {
@@ -213,7 +225,7 @@ function uanSender(data) {
 
 		function _updateResult(resStatus, tid) {
 			var now = (Date.now()).toString().slice(0,10);
-			var sql = 'update push_direct set status = ?, sent_at = ?, attempted_retry_cnt = + 1, last_attempted_at = ? ' +
+			var sql = 'update push_direct set status = ?, sent_at = ?, attempted_retry_cnt = attempted_retry_cnt + 1, last_attempted_at = ? ' +
 									   'where tid = ?';
 			var arg = [ resStatus, now, now, tid ];
 			db.query(sql, arg, function(err, result) {

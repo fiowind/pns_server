@@ -1,7 +1,7 @@
 {
 	"server": {
 		"host": "pns.uangel.com",
-		"port": "8100"
+		"port": "8080"
 	},
 	"database": {
 		"mysql": {
