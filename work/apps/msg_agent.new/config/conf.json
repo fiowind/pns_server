@@ -1,0 +1,61 @@
+{
+	"sms": {
+		"host": "mprapp.nate.com",
+		"port": "8001",
+		"url": "http://mprapp.nate.com:8001/mpomr/sms_notice_util.fcgi",
+		"tps": "30",
+		"sendCnt": "0",
+		"status": "false"
+	},
+	"mms": {
+		"host": "mprapp.nate.com",
+		"port": "8001",
+		"url": "false",
+		"tps": "30",
+		"sendCnt": "0",
+		"status": "false"
+	},
+	"gcm": {
+		"host": "false",
+		"port": "false",
+		"url": "false",
+		"tps": "30",
+		"sendCnt": "0",
+		"status": "false"
+	},
+	"apns": {
+		"host": "false",
+		"port": "false",
+		"url": "false",
+		"tps": "30",
+		"sendCnt": "0",
+		"status": "false"
+	},
+	"uapns": {
+		"host": "false",
+		"port": "false",
+		"url": "false",
+		"tps": "30",
+		"sendCnt": "0",
+		"status": "false"
+	},
+	"database": {
+		"mysql": {
+            "host": "localhost",
+            "port": "3306",
+            "user": "root",
+            "password": "root.123",
+            "database": "pns_server",
+            "connectTimeout": "1000",
+			"status": "false"
+		},
+		"redis": {
+			"host": "localhost",
+			"port": "6379",
+			"status": "false"
+		}
+	},
+	"logLevel": "DBG",
+	"processName": "msg_agent"
+}
+	

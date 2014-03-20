@@ -144,10 +144,19 @@ function pns_form_form_alter(&$form, &$form_state, $form_id) {
 			_unset_menu_items($form, $form_id);
 			break;	
 		case 'application_node_form':
-		case 'message_node_form':
 		case 'target_node_form':
+		case 'message_node_form':
 			_unset_menu_items($form, $form_id);
-			break;		
+			break;	
+		case 'rich_message_node_form':
+			_unset_menu_items($form, $form_id);
+			
+			$form['#attached']['js'] = array(
+				libraries_get_path('ckeditor').'/ckeditor.js',
+				libraries_get_path('ckeditor').'/config.js',
+				drupal_get_path('module', 'pns_layout') . '/js/pns_layout.js'
+			);
+			break;
 	}
 	_add_ajax_submit_callback($form_id, $form);
 	return $form;

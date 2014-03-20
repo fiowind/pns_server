@@ -1,0 +1,18 @@
+package = PNS
+name = PNS Layout
+description = "PNS Layout"
+core = 7.x
+
+; Providers.
+files[] = pns_layout.inc
+files[] = pns_layout.module
+
+scripts[] = js/bootstrap.min.js
+scripts[] = js/html5shiv.js
+scripts[] = js/jquery.htmlClean.js
+scripts[] = js/jquery-ui.js
+scripts[] = js/jquery.ui.touch-punch.min.js
+
+stylesheets[all][] = css/bootstrap.min.css
+stylesheets[all][] = css/bootstrap-theme.min.css
+stylesheets[all][] = css/pns_layout.css

@@ -10,6 +10,8 @@ function _insert_direct_push_message($campaign_node){
 
 	$message_id = $campaign_node->field_ref_message['und'][0]['target_id'];
 	$message_node = node_load($message_id);
+	$rich_message_id = $campaign_node->field_message_for_direct['und'][0]['target_id'];
+	$rich_message_node = node_load($rich_message_id);
 
 	$url_prefix = 'http://pns.uangel.com/push/'.$campaign_node->nid.'/direct/';
 
@@ -101,7 +103,7 @@ function _insert_direct_push_message($campaign_node){
 			$entity->maximum_retry_cnt = $maximum_retry_cnt;
 			$entity->attempted_retry_cnt = 0;
 			
-			$entity->text = $message_node->title;
+			$entity->text = $rich_message_node->title;
 			$entity->url = $url_prefix.$client->nid;
 			
 			$entity->requested_at = time();

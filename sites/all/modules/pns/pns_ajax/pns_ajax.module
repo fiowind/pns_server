@@ -14,8 +14,51 @@ function pns_ajax_menu() {
       'access callback' => TRUE,
       'type' => MENU_CALLBACK,
   );
+  $items['save_rich_message/%/%'] = array( 
+      'title' => 'Save Rich Message',
+      'page callback' => 'pns_ajax_save_rich_message',
+      'page arguments' => array(1,2),
+      'access callback' => TRUE,
+      'type' => MENU_CALLBACK,
+  );
   return $items;
 } 
+
+function pns_ajax_save_rich_message($title,$save_type,$nid=NULL){
+	global $user;
+	ctools_include('node.pages', 'node', '');
+	ctools_include('ajax');
+
+	$layout_html = $_POST['layout_html'];
+	
+	$pure_html = $_POST['pure_html'];
+
+	if($save_type == 'edit'){
+		$node = node_load($nid);
+	}else{
+		$node = new StdClass();
+		$node->title = $title;
+		$node->uid = $user->uid;
+		$node->type = 'rich_message';
+		$node->language = 'und';
+	}
+
+	$node->field_layout_html['und'][0]['value'] = $layout_html;
+	$node->field_layout_html['und'][0]['safe_value'] = $layout_html;
+	$node->field_pure_html['und'][0]['value'] = $pure_html;
+	$node->field_pure_html['und'][0]['safe_value'] = $pure_html;
+	node_save($node);
+
+	$url = array();
+	$fullpath = '';
+	$url = _get_redirect_url_in_view_n_delete('view',$node);
+	$fullpath = '/'.$url['path'];
+	$fullpath .= !empty($url['fragment'])? '#'.$url['fragment'] : '';
+	
+	$output = array('return' => true, 'urlpath' => $fullpath);
+	print json_encode($output);
+	exit;
+}
 
 function pns_ajax_read_confirm($campaign_id, $channel, $app_client_id) {
 	$appClient = node_load($app_client_id);
@@ -23,12 +66,15 @@ function pns_ajax_read_confirm($campaign_id, $channel, $app_client_id) {
 	$viewResult = views_get_view_result('message_used_for_campaign', 'panel_pane_1', $campaign_id);
 
 	if(count($viewResult) > 0) {
-
 		switch($channel){
 			case 'direct':
-
 				// html render for direct channel
-				$output = "<html><script>
+				$output = "<html>";
+				$output .= '<meta charset="utf-8">
+					<meta name="viewport" content="width=device-width, initial-scale=1.0">
+					';
+				/*
+				$output .= "<script>
 					  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
 						   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
 							   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
@@ -38,9 +84,13 @@ function pns_ajax_read_confirm($campaign_id, $channel, $app_client_id) {
 					  ga('send', 'pageview');
 
 				</script>";
-				$output .= $viewResult[0]->field_field_rich_message[0]['rendered']['#markup'];
-
-				$output .= "</html>";
+				*/
+				$output .= '<link href="/sites/all/modules/pns/pns_layout/css/bootstrap.min.css" rel="stylesheet">';
+				$output .= '  <script type="text/javascript" src="/sites/all/modules/jquery_update/replace/jquery/1.7/jquery.min.js"></script>';
+				$output .= '<script type="text/javascript" src="/sites/all/modules/pns/pns_layout/js/bootstrap.min.js"></script></head>';
+				$output .='<body>';
+				$output .= $viewResult[0]->field_field_pure_html[0]['raw']['value'];
+				$output .= '</body></html>';
 
 				// make status 'read' 
 				$viewResult = views_get_view_result('push_direct', 'panel_pane_2', $campaign_id, $app_client_id);
@@ -68,7 +118,6 @@ function pns_ajax_read_confirm($campaign_id, $channel, $app_client_id) {
 		}
 
 	}
-
 	print $output;
 	exit;
 }

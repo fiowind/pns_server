@@ -105,7 +105,7 @@ function _doConnectRedis() {
 		pub  = redis.createClient();
 
 		// check redis
-		db.on('error', function(err) {
+		pub.on('error', function(err) {
 			log.error('redis pub error', err);
 				if (err) throw err;
 		});
@@ -192,11 +192,11 @@ function _getQueueRouteSMS(route, handle) {
 
 						var row = rows[i];
 						db.query(sql, arg, function(err, result) {
-						if (err) {
+							if (err) {
 								db.rollback(function() {
 									throw err;
 								});
-							};
+							}
 							db.commit(function(err) {
 								if (err) {
 									db.rollback(function() {
@@ -252,11 +252,11 @@ function _getQueueRouteGCM(route, handle) {
 							arg = [ 'retried', rows[i].tid, rows[i] ];
 
 						db.query(sql, arg, function(err, result) {
-						if (err) {
+							if (err) {
 								db.rollback(function() {
 									throw err;
 								});
-							};
+							}
 							db.commit(function(err) {
 								if (err) {
 									db.rollback(function() {
@@ -322,11 +322,11 @@ function _getQueueRouteUAN(route, handle) {
 						}
 
 						db.query(sql, arg, function(err, result) {
-						if (err) {
+							if (err) {
 								db.rollback(function() {
 									throw err;
 								});
-							};
+							}
 							db.commit(function(err) {
 								if (err) {
 									db.rollback(function() {

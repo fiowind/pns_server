@@ -1,0 +1,19 @@
+<?php
+
+function pns_layout_init() { 
+  // drupal_add_js(libraries_get_path('ckeditor').'/ckeditor.js');
+  // drupal_add_js(libraries_get_path('ckeditor').'/config.js');
+}
+
+function pns_layout_theme($existing, $type, $theme, $path) {
+  $theme = array();
+  $theme['rich_message_node_form'] = array(
+    //'variables' => array('renderer' => NULL, 'region' => NULL, 'content_type' => NULL),
+    // 'arguments' => array('form' => NULL),
+    'render element' => 'form',
+    'path' => drupal_get_path('module', 'pns_layout') . '/theme',
+    'template' => 'rich-message-node-form',    
+    //'file' => '../includes/add-content.inc',    
+  );
+  return $theme;
+}

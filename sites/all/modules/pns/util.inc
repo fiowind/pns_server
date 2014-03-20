@@ -457,8 +457,15 @@ function _get_redirect_url_in_view_n_delete($viewOrDel, $node) {
 		case 'application':
 		case 'message':
 		case 'target':
+		case 'rich_message':
 			// $fragments = array('campaign' => 'quickset-menu=0');
-			$fragments = array('campaign' => '','message'=>'quickset-menu=1','target'=>'quickset-menu=2','application'=>'quickset-menu=3');
+			$fragments = array(
+				'campaign' => '',
+				'rich_message'=>'quickset-menu=1',
+				'message'=>'quickset-menu=2',
+				'target'=>'quickset-menu=3',
+				'application'=>'quickset-menu=4'
+			);
 			if ($viewOrDel == 'view') {
 				$url['path'] = 'custom_edit/'.$node->type.'/'.$node ->nid;
 			} else {
@@ -480,8 +487,15 @@ function _get_redirect_url_in_create_n_list($addOrList, $content_type, $params) 
 		case 'application':
 		case 'message':
 		case 'target':
+		case 'rich_message':
 			// $fragments = array('campaign' => 'quickset-menu=0');
-			$fragments = array('campaign' => '','message'=>'quickset-menu=1','target'=>'quickset-menu=2','application'=>'quickset-menu=3');
+			$fragments = array(
+				'campaign' => '',
+				'rich_message'=>'quickset-menu=1',
+				'message'=>'quickset-menu=2',
+				'target'=>'quickset-menu=3',
+				'application'=>'quickset-menu=4'
+			);
 			if ($addOrList == 'add') {
 				$url['path'] = 'custom_add/'.$content_type.'/add';
 			} else {
