@@ -178,7 +178,7 @@ a.language-selected { font-style: italic; font-weight: bold; }
 
 /* custom modification */
 .ui-draggable{
-	margin: 1em 0 1em 0;
+	margin: 2px 0 2px 0;
 }
 
 .main-container.container{

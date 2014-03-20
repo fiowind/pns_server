@@ -6,10 +6,6 @@
 //echo drupal_render_children($form);
 //dsm($form,'form'); 
 ?>
-<div class="btn-group" data-toggle="buttons-radio">
-      <button type="button" id="edit" class="btn btn-primary active"><i class="icon-edit icon-white"></i>Edit</button>
-      <button type="button" class="btn btn-primary" id="sourcepreview"><i class="icon-eye-open icon-white"></i>Preview</button>
-    </div>
 <div id="demo_wrapper" class="edit">
   <div class="container-fluid">
     <!-- title -->
