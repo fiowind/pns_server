@@ -34,17 +34,19 @@ function getQueueRoute(route, handle, msgType, table) {
 				console.log('rows.length = ' + rows.length);
 				conf[msgType.toLowerCase()].sendCnt = rows.length;
 
-				for (var i = 0; i < rows.length; i++) {
-					mysqlPool.getConnection(function(err, conn) {
-						if (err) callback(err);
-						else {
-							_updateQueueTable(conn, table, rows[i], function(err, row) {
-								conn.release();
-								callback(err, row);
-							});
-						}
-					});
-				}
+            	for (var i = 0; i < rows.length; i++) {
+                	(function(temp) {
+                    	mysqlPool.getConnection(function(err, conn) {
+                        	if (err) callback(err);
+                        	else {
+                            	_updateQueueTable(conn, table, temp, function(err, row) {
+                                	conn.release();
+                                	callback(err, row);
+                            	});
+                        	}
+                    	});
+                	})(rows[i]);
+            	}
 			}
 		}
 	],
@@ -53,7 +55,7 @@ function getQueueRoute(route, handle, msgType, table) {
 
 		if (row) {
 			conf[msgType.toLowerCase()].sendCnt--;
-			route(handle, row.target, row);
+			route(handle, msgType, row);
 		}
 	});
 
