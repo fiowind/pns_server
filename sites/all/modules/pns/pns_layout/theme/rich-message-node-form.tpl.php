@@ -387,7 +387,7 @@
                   <div class="view">
                     <h2 contenteditable="true">Title</h2>
                     <p contenteditable="true">adsfjaskfdjkasfdjk.</p>
-                    <p><a class="btn" href="#" contenteditable="true">查看更多 »</a></p>
+                    <p><a class="btn" href="#" contenteditable="true">TEST »</a></p>
                   </div>
                 </div>
                 <div class="box box-element ui-draggable"> 
@@ -506,7 +506,7 @@
   					<textarea id="contenteditor"></textarea>
   				</p>
   			</div>
-  			<div class="modal-footer"> <a id="savecontent" class="btn btn-primary" data-dismiss="modal">Insurance</a> <a class="btn" data-dismiss="modal">Close</a> </div>
+  			<div class="modal-footer"> <a id="savecontent" class="btn btn-primary" data-dismiss="modal">Save</a> <a class="btn" data-dismiss="modal">Close</a> </div>
   		</div>
   	</div>
   </div>

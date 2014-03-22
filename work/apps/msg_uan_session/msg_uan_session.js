@@ -24,14 +24,21 @@ if (cluster.isMaster) {
 
 		cluster.on('exit', function(worker, code, signal) {
 			log.error('[exit] : worker = [' + worker.process.pid + '] exit.');
-			//cluster.fork();
-			var sessionIDLike = os.hostname() + '|' + conf.server.port + '|' + worker.process.pid + '%';
 	
+			workerCnt--;
 			//conf.status.db = false;
+			var sessionIDLike = os.hostname() + '|' + conf.server.port + '|' + worker.process.pid + '%';
 			_updateDeviceConnection_all(sessionIDLike, function(err) {
 				if (err) throw err;
-				workerCnt--;
 			}); 
+
+			if (woker.suicide === true) {
+				// skip
+			}
+			else {
+				cluster.fork();
+				workerCnt++;
+			}
 		});
 
 		/*

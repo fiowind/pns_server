@@ -494,7 +494,8 @@ function _get_redirect_url_in_create_n_list($addOrList, $content_type, $params) 
 				'rich_message'=>'quickset-menu=1',
 				'message'=>'quickset-menu=2',
 				'target'=>'quickset-menu=3',
-				'application'=>'quickset-menu=4'
+				'application'=>'quickset-menu=4',
+				'report'=>'quickset-menu=5'
 			);
 			if ($addOrList == 'add') {
 				$url['path'] = 'custom_add/'.$content_type.'/add';

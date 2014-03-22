@@ -132,7 +132,7 @@ function _initProcess(callback) {
 				callback(null);	
 			}
 			else {
-				callback(new Error('database connect fail. mysql = [' + result[0] + '], redis = [' + result[1] + ']'));
+				callback(new Error('database connect fail. mysql = [' + results[0] + '], redis = [' + results[1] + ']'));
 			}
 		}
 	});

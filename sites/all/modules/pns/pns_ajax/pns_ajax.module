@@ -37,12 +37,12 @@ function pns_ajax_save_rich_message($title,$save_type,$nid=NULL){
 		$node = node_load($nid);
 	}else{
 		$node = new StdClass();
-		$node->title = $title;
 		$node->uid = $user->uid;
 		$node->type = 'rich_message';
 		$node->language = 'und';
 	}
-
+	
+	$node->title = $title;
 	$node->field_layout_html['und'][0]['value'] = $layout_html;
 	$node->field_layout_html['und'][0]['safe_value'] = $layout_html;
 	$node->field_pure_html['und'][0]['value'] = $pure_html;
