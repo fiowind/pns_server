@@ -17,6 +17,7 @@ function smsSender(data) {
 	var option = {};
 	var req = false;
 
+	if (!data) return;
 	log.debug('[SMS] data : ' + JSON.stringify(data);
 
 	urlStr = conf.sms.url + '?' +
@@ -71,54 +72,134 @@ function smsSender(data) {
 	});
 
 	req.end();
+	return;
 }
 exports.smsSender = smsSender;
 
 function mmsSender(data) {
+
+	if (!data) return;
+	log.debug('[MMS] data : ' + JSON.stringify(data));
+	return;
 }
 exports.mmsSender = mmsSender;
 
 function gcmSender(data) {
+
+	var message = false;
+	var sender = false;
+	var regid = false;
+
+	if (!data) return;
+	log.debug('[GCM] data : ' + JSON.stringify(data));
+
+	message = new gcm.Message();
+	sender = new gcm.Sender(data.api_key);
+
+	if (data.text) message.addDataWithKeyValue('text', data.text);
+	if (data.url)  message.addDataWithKeyValue('url', data.url);
+
+	message.collapseKey = Math.random() % 100 + 1;
+	message.delayWhileIdle = true;
+	message.timeToLive = 3;
+
+	regid.push(data.push_token);
+
+	// sender.send(message, regid, 4, function(err, result)
+	sender.sendNoRetry(message, regid, function(err, result) {
+		if (err) {
+			log.error('[GCM] sender error : ' + err);
+			if (data.maximum_retry_cnt === (data.attempted_retry_cnt + 1))
+				_updateResultQueueTable('GCM', data.tid, 'failed');
+			else
+				_updateResultQueueTable('GCM', data.tid, 'retrying');
+
+			return;
+		}
+
+		if (result) {
+			log.info('[GCM] sender result : ' + JSON.stringify(result));
+			_updateResultQueueTable('GCM', data.tid, 'success');
+		}
+		else {
+			log.error('[GCM] sender result : ' + JSON.stringify(result));
+
+			if (data.maximum_retry_cnt === (data.attempted_retry_cnt + 1))
+				_updateResultQueueTable('GCM', data.tid, 'failed');
+			else
+				_updateResultQueueTable('GCM', data.tid, 'retrying');
+		}			
+	});
+
+	return;
 }
 exports.gcmSender = gcmSender;
 
 function apnsSender(data) {
+	if (!data) return;
+	log.debug('[APNS] data : ' + JSON.stringify(data));
+	return;
 }
 exports.apnsSender = apnsSender;
 
 function uapnsSender(data) {
+
+	var sessionId = '';
+
+	if (!data) return;
+	log.debug('[UAPNS] data : ' + JSON.stringify(data));
+
+	_selectDeviceConnection(data.device_id, function(err, rows) {
+		if (err) {
+			log.error('_selectDeviceConnection Error : ' + err);
+			throw err;
+		}
+
+		if (rows.length <= 0) {
+			_updateResultQueueTable('UAPNS', data.tid, 'unknown');
+		}
+		else {
+			if (rows[0].is_connected === 'true') {
+				sessionId = rows[0].session_id.splite('|');
+				//redisPub(sessionId[0] + '|' + sessionId[1] + '|' + sessionId[2], JSON.stringify(data));
+				redisPub('direct', JSON.stringify(data));
+			}
+			else {
+				_updateResultQueueTable('UAPNS', data.tid, 'offline');
+			}
+		}
+	});
 }
 exports.uapnsSender = uapnsSender;
-
-function mailSender(data) {
-}
-exports.mailSender = mailSender;
 
 function _updateResultQueueTable(msgType, tid, status) {
 
 	var sql = '';
 	var table = '';	
 
-	switch (msgType.toLowerCase()) {
-		case 'sms':
+	switch (msgType) {
+		case 'SMS':
 			table = 'push_sms';
-			return;
-		case 'mms':
+			break;
+		case 'MMS':
 			table = 'push_sms';
-			return;
-		case 'gcm':
+			break;
+		case 'GCM':
 			table = 'push_gcm';
-			return;
-		case 'apns':
+			break;
+		case 'APNS':
 			table = 'push_gcm';
-			return;
-		case 'uapns':
+			break;
+		case 'UAPNS':
 			table = 'push_direct';
+			break;
+		default:
+			throw new Error('_updateResultQueueTable error..  unknown msgType = [' + msgType + ']');
 			return;
 	}
 
 
-	sql = "update " + table + " set status = " + status + 
+	sql = "update " + table + " set status = '" + status + "'" + 
 							 	 ", sent_at = " + (Date.now()).toString().slice(0,10) +
 								 ", attempted_retry_cnt = attempted_retry_cnt + 1 " + 
 								 ", last_attempted_at = " + (Date.now()).toString().slice(0,10) +
@@ -132,14 +213,4 @@ function _updateResultQueueTable(msgType, tid, status) {
 			});
 		}
 	});
-
-	db.query(sql, function(err, result) {
-		if (err) 
-
-
-
-
-
-
-
 }

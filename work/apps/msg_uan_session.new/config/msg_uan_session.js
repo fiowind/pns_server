@@ -3,7 +3,7 @@ global.conf = require('./config/conf');
 var ua_log = require('ualib').ua_log;
 global.log = new ua_log(conf.logLevel, conf.processName);
 global.mysqlPool = false;
-global.redisPub = false;
+global.redisSub = false;
 
 var domain = require('domain');
 var main = domain.create();
@@ -12,18 +12,16 @@ var mysql = require('mysql');
 var redis = require('redis');
 var async = require('async');
 
-var server = require('./lib/server');
-var router = require('./lib/router');
-var handler = require('./lib/handler');
+var workerProcess = require('./lib/workerProcess');
 
 function _signalHandler() {
 	process.on('SIGINT', function() {
-		log.info('proecess catch signal : SIGINT');
+		log.info('process catch signal : SIGINT');
 		_endProcess(0);
 	});
 
 	process.on('SIGTERM', function() {
-		log.info('proecess catch signal : SIGTERM');
+		log.info('process catch signal : SIGTERM');
 		_endProcess(0);
 	});
 }
@@ -31,14 +29,16 @@ function _signalHandler() {
 function _doConnectMysqlPool(callback) {
 
 	mysqlPool = mysql.createPool(conf.database.mysql);
-
+	
+	// connect Check
 	_connectCheck(callback);
 
+	/// connect Check 30 Min
 	setInterval(function() {
-		log.info('MySQL connect check...[1000*1800] sec');
+		log.info('MySQL connect check start...[1000 * 1800] sec');
 		_connectCheck(null);
 	}, 1000 * 1800);
-	
+
 	function _connectCheck(callback) {
 		mysqlPool.getConnection(function(err, conn) {
 			if (err) {
@@ -47,19 +47,16 @@ function _doConnectMysqlPool(callback) {
 				conf.database.mysql.status = false;
 				mysqlPool.end();
 
-				// reconnect
 				setTimeout(function() {
 					_doConnectMysqlPool(callback);
 				}, 2000);
 			}
 			else {
-				log.info('MySQL connect check ok...[once]');
+				log.info('MySQL connect check ok...');
 				conn.release();
 				conf.database.mysql.status = true;
 				if (typeof callback === 'function') {
-					return process.nextTick(function() {
-						callback(null, conf.database.mysql.status);
-					});
+					callback(null, conf.database.mysql.status);
 				}
 				else {
 					return;
@@ -71,38 +68,33 @@ function _doConnectMysqlPool(callback) {
 
 function _doConnectRedis(callback) {
 
-	// auto reconnect 
-	redisPub = redis.createClient();
+	// auto reconnect
+	redisSub = redis.createClient();
 
-	redisPub.on('error', function(err) {
+	redisSub.on('error', function(err) {
 		conf.database.redis.status = false;
 		log.error(err);
 	});
 
-	redisPub.on('connect', function() {
+	redisSub.on('connect', function() {
 		conf.database.redis.status = true;
-		return process.nextTick(function() {
-			callback(null, conf.database.redis.status);
-		});
+		callback(null, conf.database.redis.status);
 	});
 
-	redisPub.on('end', function() {
+	redisSub.on('end', function() {
 		conf.database.redis.status = false;
 		log.error('redis disconnected');
 	});
-
 }
 
 function _initProcess(callback) {
 
-	// get config
 	if (global.conf) {
 		global.conf = require('./config/conf');
 	}
-	
-	// set log 
+
 	if (global.log) {
-		var ua_log = require('ualib').ua_log;
+		ua_log = require('ualib').ua_log;
 		global.log = new ua_log(conf.logLevel, conf.processName);
 	}
 
@@ -115,21 +107,20 @@ function _initProcess(callback) {
 			global.mysqlPool = false;
 			_doConnectMysqlPool(function(err, status) {
 				cb(err, status);
-			});			
+			});
 		},
 		function(cb) {
-			global.redisPub = false;
+			global.redisSub = false;
 			_doConnectRedis(function(err, status) {
-				if (err) callback(err, false);
-				cb(null, status);
-			});	
+				cb(err, status);
+			});
 		}
 	],
 	function(err, results) {
-		if (err) callback(err):
+		if (err) callback(err);
 		else {
-			if (results[0] && results[1]) {
-				callback(null);	
+			if (results[0] && result[1]) {
+				callback(null);
 			}
 			else {
 				callback(new Error('database connect fail. mysql = [' + result[0] + '], redis = [' + result[1] + ']'));
@@ -140,25 +131,14 @@ function _initProcess(callback) {
 
 function _doProcess(callback) {
 
-	var handle = {};
-	handle['SMS'] 	= handler.smsSender;
-	handle['MMS'] 	= handler.mmsSender;
-	handle['GCM'] 	= handler.gcmSender;
-	handle['APNS'] 	= handler.apnsSender;
-	handle['UAPNS']	= handler.uapnsSender;
-
-	server.start(router.route, handle);
-
-	return process.nextTick(function() {
-		callback(null);
-	});
+	workerProcess.start();
 }
 
 function _endProcess(code) {
 
 	setTimeout(function() {
 		if (mysqlPool) mysqlPool.end();
-		if (redisPub) redisPub.end();
+		if (redisSub) redisSub.end();
 		process.exit(code);
 	}, 1000);
 }
@@ -167,7 +147,6 @@ main.on('error', function(err) {
 	log.error(err.stack);
 
 	try {
-		// error handle
 		_endProcess(-1);
 	}
 	catch (catchErr) {
@@ -184,5 +163,4 @@ main.run(function() {
 			if (err) throw err;
 		});
 	});
-
 });

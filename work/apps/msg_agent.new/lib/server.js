@@ -8,23 +8,6 @@ function start(route, handle) {
 	setInterval(function() {
 		if (conf.database.mysql.status) {
 			queue.getQueueRoute(route, handle, 'SMS', 'push_sms');
-			queue.getQueueRoute(route, handle, 'SMS', 'push_sms');
-			queue.getQueueRoute(route, handle, 'SMS', 'push_sms');
-			queue.getQueueRoute(route, handle, 'SMS', 'push_sms');
-			queue.getQueueRoute(route, handle, 'SMS', 'push_sms');
-			queue.getQueueRoute(route, handle, 'SMS', 'push_sms');
-			queue.getQueueRoute(route, handle, 'SMS', 'push_sms');
-			queue.getQueueRoute(route, handle, 'SMS', 'push_sms');
-			queue.getQueueRoute(route, handle, 'SMS', 'push_sms');
-			queue.getQueueRoute(route, handle, 'SMS', 'push_sms');
-			queue.getQueueRoute(route, handle, 'SMS', 'push_sms');
-			queue.getQueueRoute(route, handle, 'SMS', 'push_sms');
-			queue.getQueueRoute(route, handle, 'SMS', 'push_sms');
-			queue.getQueueRoute(route, handle, 'SMS', 'push_sms');
-			queue.getQueueRoute(route, handle, 'SMS', 'push_sms');
-			queue.getQueueRoute(route, handle, 'SMS', 'push_sms');
-			queue.getQueueRoute(route, handle, 'SMS', 'push_sms');
-			queue.getQueueRoute(route, handle, 'SMS', 'push_sms');
 			queue.getQueueRoute(route, handle, 'MMS', 'push_sms');
 			queue.getQueueRoute(route, handle, 'GCM', 'push_gcm');
 			queue.getQueueRoute(route, handle, 'APNS', 'push_gcm');

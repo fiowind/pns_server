@@ -3,13 +3,13 @@ var async = require('async');
 
 function getQueueRoute(route, handle, msgType, table) {
 
-	if (conf[msgType.toLowerCase()].sendCnt >= conf[msgType.toLowerCase()].tps) {
-		console.log(msgType + ' tps over!! send [' + conf[msgType.toLowerCase()].sendCnt + '>=' + conf[msgType.toLowerCase()].tps + '] tps');
+	if (_getSendCnt(msgType) >= _getTps(msgType)) {
+		console.log(msgType + ' tps over!! send [' + _getSendCnt(msgType) + '>=' + _getTps(msgType) + '] tps');
 		return;
 	}
 
-	if (conf[msgType.toLowerCase()].sendCnt !== 0) {
-		console.log(msgType + ' is busy!!! now sendCnt = [' + conf[msgType.toLowerCase()].sendCnt + ']');
+	if (_getSendCnt(msgType) !== 0) {
+		console.log(msgType + ' is busy!!! now sendCnt = [' + _getSendCnt(msgType) + ']');
 		return;
 	}
 
@@ -18,7 +18,7 @@ function getQueueRoute(route, handle, msgType, table) {
 			mysqlPool.getConnection(function(err, conn) {
 				if (err) callback(err);
 				else {
-					_selectQueueTable(conn, table, msgType, conf[msgType.toLowerCase()].tps, function(err, rows) {
+					_selectQueueTable(conn, table, msgType, _getTps(msgType), function(err, rows) {
 						conn.release();
 						callback(err, rows);	
 					});
@@ -32,7 +32,7 @@ function getQueueRoute(route, handle, msgType, table) {
 			}
 			else {
 				console.log('rows.length = ' + rows.length);
-				conf[msgType.toLowerCase()].sendCnt = rows.length;
+				_setSendCnt(msgType, rows.length);
 
             	for (var i = 0; i < rows.length; i++) {
                 	(function(temp) {
@@ -54,7 +54,7 @@ function getQueueRoute(route, handle, msgType, table) {
 		if (err) throw err;
 
 		if (row) {
-			conf[msgType.toLowerCase()].sendCnt--;
+			_setSendCnt(msgType, -1);
 			route(handle, msgType, row);
 		}
 	});
@@ -94,7 +94,7 @@ function _updateQueueTable(conn, table, row,  callback) {
 	else if (status === 'retrying'	) status = 'retried';
 	else 							  status = 'failed';
 
-	var sql = "update " + table + "   set status = " + status + 
+	var sql = "update " + table + "   set status = '" + status + "'" +
 			   					  " where tid = " + row.tid;	
 
 	conn.query(sql, function(err, result) {
@@ -116,4 +116,58 @@ function _updateQueueTable(conn, table, row,  callback) {
 			});
 		}
 	});
+}
+
+function _getSendCnt(msgType) {
+	switch (msgType) {
+		case 'SMS':
+			return conf.sms.sendCnt;
+		case 'MMS':
+			return conf.mms.sendCnt;
+		case 'GCM':
+			return conf.gcm.sendCnt;
+		case 'APNS':
+			return conf.apns.sendCnt;
+		case 'UAPNS':
+			return conf.uapns.sendCnt;
+		default:
+			throw new Error('_getSendCnt Error...unknown msgType = [' + msgType + ']');
+			return;
+	}
+}
+
+function _getTps(msgType) {
+	switch (msgType) {
+		case 'SMS':
+			return conf.sms.tps;
+		case 'MMS':
+			return conf.mms.tps;
+		case 'GCM':
+			return conf.gcm.tps;
+		case 'APNS':
+			return conf.apns.tps;
+		case 'UAPNS':
+			return conf.uapns.tps;
+		default:
+			throw new Error('_getTps Error...unknown msgType = [' + msgType + ']');
+			return;
+	}
+}
+
+function _setSendCnt(msgType, count) {
+	switch (msgType) {
+		case 'SMS':
+			return conf.sms.sendCnt = conf.sms.sendCnt + count;
+		case 'MMS':
+			return conf.mms.sendCnt = conf.mms.sendCnt + count;
+		case 'GCM':
+			return conf.gcm.sendCnt = conf.gcm.sendCnt + count;
+		case 'APNS':
+			return conf.apns.sendCnt = conf.apns.sendCnt + count;
+		case 'UAPNS':
+			return conf.uapns.sendCnt = conf.uapns.sendCnt + count;
+		default:
+			throw new Error('_setSendCnt Error...unknown msgType = [' + msgType + ']');
+			return;
+	}
 }
