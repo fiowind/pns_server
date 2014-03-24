@@ -4,12 +4,12 @@ var async = require('async');
 function getQueueRoute(route, handle, msgType, table) {
 
 	if (_getSendCnt(msgType) >= _getTps(msgType)) {
-		console.log(msgType + ' tps over!! send [' + _getSendCnt(msgType) + '>=' + _getTps(msgType) + '] tps');
+		log.warning(msgType + ' tps over!! send [' + _getSendCnt(msgType) + '>=' + _getTps(msgType) + '] tps');
 		return;
 	}
 
 	if (_getSendCnt(msgType) !== 0) {
-		console.log(msgType + ' is busy!!! now sendCnt = [' + _getSendCnt(msgType) + ']');
+		log.warning(msgType + ' is busy!!! now sendCnt = [' + _getSendCnt(msgType) + ']');
 		return;
 	}
 
@@ -31,7 +31,7 @@ function getQueueRoute(route, handle, msgType, table) {
 				callback(null, null);
 			}
 			else {
-				console.log('rows.length = ' + rows.length);
+				log.info('rows.length = ' + rows.length);
 				_setSendCnt(msgType, rows.length);
 
             	for (var i = 0; i < rows.length; i++) {

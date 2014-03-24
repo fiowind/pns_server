@@ -126,9 +126,10 @@ function _initProcess(callback) {
 		}
 	],
 	function(err, results) {
-		if (err) callback(err):
+		if (err) callback(err);
 		else {
 			if (results[0] && results[1]) {
+				log.info('database connect success. mysql = [' + results[0] + '], redis = [' + results[1] + ']');
 				callback(null);	
 			}
 			else {

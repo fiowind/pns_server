@@ -18,7 +18,7 @@ function smsSender(data) {
 	var req = false;
 
 	if (!data) return;
-	log.debug('[SMS] data : ' + JSON.stringify(data);
+	log.debug('[SMS] data : ' + JSON.stringify(data));
 
 	urlStr = conf.sms.url + '?' +
 			 'id=Svc' + '&' +
@@ -207,10 +207,40 @@ function _updateResultQueueTable(msgType, tid, status) {
 	mysqlPool.getConnection(function(err, conn) {
 		if (err) callback(err);
        	else {
-			_selectQueueTable(conn, table, msgType, conf[msgType.toLowerCase()].tps, function(err, rows) {
-				conn.release();
-				callback(err, rows);
+			conn.query(sql, function(err, result) {
+				if (err) {
+					conn.rollback(function() {
+						log.error('_updateResultQueueTable error : ' + err);
+					});
+				}
+				else {
+					conn.commit(function(err) {
+						if (err) {
+							conn.rollback(function() {
+								log.error('_updateResultQueueTable error : ' + err);
+							});
+						}
+						else {
+							log.debug('_updateResultQueueTable ok : ' + table + ', tid = ' + tid);
+						}
+					});
+				}
 			});
+		}
+	});
+}
+
+function _selectDeviceConnection (deviceId, callback) {
+	var sql = '';
+
+	sql = "select * from device_connection where device_id = '" + deviceId + "'";
+
+	mysqlPool.getConnection(function(err, conn) {
+		if (err) callback(err);
+		else {
+			conn.query(sql, function(err, rows) {
+				callback(err, rows);
+			});	
 		}
 	});
 }
