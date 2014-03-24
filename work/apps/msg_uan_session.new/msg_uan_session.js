@@ -34,6 +34,7 @@ function _updateDeviceConnection_all(workerPid, callback) {
 			conn.query(sql, function(err, result) {
 				if (err) {
 					conn.rollback(function() {
+						conn.release();
 						callback(err);
 					});
 				}
@@ -41,10 +42,12 @@ function _updateDeviceConnection_all(workerPid, callback) {
 					conn.commit(function(err) {
 						if (err) {	
 							conn.rollback(function() {
+								conn.release();
 								callback(err);
 							});
 						}
 						else {
+							conn.release();
 							callback(err, result);
 						}
 					});
@@ -189,12 +192,8 @@ function _doProcess(callback) {
 			else {
 				log.error('[exit] : worker.pid = [' + worker.process.pid + '] exit. reforked');
 
-				mysqlPool.getConnection(function(err, conn) {
-					if (err) throw err;
-					_updateDeviceConnection_all(worker.process.pid, function(err, result) {
-						conn.release();
-						if (err) log.error('_updateDeviceConnection_all error : ' + err);
-					});
+				_updateDeviceConnection_all(worker.process.pid, function(err, result) {
+					if (err) log.error('_updateDeviceConnection_all error : ' + err);
 				});
 
 				cluster.fork();
@@ -215,12 +214,8 @@ function _endProcess(code) {
 		// skip
 	}
 	else {
-		mysqlPool.getConnection(function(err, conn) {
-			if (err) throw err;
-			_updateDeviceConnection_all(process.pid, function(err, result) {
-				conn.release();
-				if (err) log.error('_updateDeviceConnection_all error : ' + err);
-			});
+		_updateDeviceConnection_all(process.pid, function(err, result) {
+			if (err) log.error('_updateDeviceConnection_all error : ' + err);
 		});
 	}
 

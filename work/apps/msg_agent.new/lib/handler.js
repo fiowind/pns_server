@@ -203,7 +203,7 @@ function _updateResultQueueTable(msgType, tid, status) {
 							 	 ", sent_at = " + (Date.now()).toString().slice(0,10) +
 								 ", attempted_retry_cnt = attempted_retry_cnt + 1 " + 
 								 ", last_attempted_at = " + (Date.now()).toString().slice(0,10) +
-                             "where tid = " + tid;
+                            " where tid = " + tid;
 	mysqlPool.getConnection(function(err, conn) {
 		if (err) callback(err);
        	else {
@@ -230,7 +230,7 @@ function _updateResultQueueTable(msgType, tid, status) {
 	});
 }
 
-function _selectDeviceConnection (deviceId, callback) {
+function _selectDeviceConnection(deviceId, callback) {
 	var sql = '';
 
 	sql = "select * from device_connection where device_id = '" + deviceId + "'";

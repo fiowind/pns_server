@@ -24,7 +24,7 @@
               $node_nid = NULL;
               $node_title = NULL;
             }
-            $echo_str = '<input type="text" class="form-control" id="node-title" maxlength="255" value="'.$node_title.'">';
+            $echo_str = '<input type="text" class="form-control" id="node-title" maxlength="128" value="'.$node_title.'">';
             $echo_str .='<input type="hidden" id="node-save-type" value="'.$node_save_type.'">';
             $echo_str .= '<input type="hidden" id="node-nid" value="'.$node_nid.'">';
             echo $echo_str;
@@ -209,7 +209,7 @@
                       <i class="glyphicon glyphicon-remove"></i>Delete
                     </a> 
                     <label class="drag btn btn-success btn-xs"><i class="glyphicon glyphicon-move"></i>Drag</label>
-                  <span class="configuration"><button type="button" class="btn btn-xs btn-default" data-target="#editorModal" role="button" data-toggle="modal">Editor</button> <a class="btn btn-xs btn-default" href="#" rel="unstyled">No Style</a> <a class="btn btn-xs btn-default" href="#" rel="inline">Embed</a> </span>
+                  <span class="configuration"><button type="button" class="btn btn-xs btn-default" data-target="#editorModal" role="button" data-toggle="modal">Editor</button></span>
                   <div class="preview">Unordered List</div>
                   <div class="view">
                     <ul contenteditable="true">
@@ -225,7 +225,7 @@
                       <i class="glyphicon glyphicon-remove"></i>Delete
                     </a> 
                     <label class="drag btn btn-success btn-xs"><i class="glyphicon glyphicon-move"></i>Drag</label>
-                  <span class="configuration"><button type="button" class="btn btn-xs btn-default" data-target="#editorModal" role="button" data-toggle="modal">Editor</button> <a class="btn btn-xs btn-default" href="#" rel="unstyled">Style</a> <a class="btn btn-xs btn-default" href="#" rel="inline">Embed</a> </span>
+                  <span class="configuration"><button type="button" class="btn btn-xs btn-default" data-target="#editorModal" role="button" data-toggle="modal">Editor</button></span>
                   <div class="preview">Ordered List</div>
                   <div class="view">
                     <ol contenteditable="true">
@@ -262,13 +262,14 @@
                       <i class="glyphicon glyphicon-remove"></i>Delete
                     </a> 
                     <label class="drag btn btn-success btn-xs"><i class="glyphicon glyphicon-move"></i>Drag</label>
-                  <span class="configuration"><button type="button" class="btn btn-xs btn-default" data-target="#editorModal" role="button" data-toggle="modal">Editor</button> <span class="btn-group"> <a class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown" href="#">Style <span class="caret"></span></a>
+                  <span class="configuration"><button type="button" class="btn btn-xs btn-default" data-target="#editorModal" role="button" data-toggle="modal">Editor</button> 
+                  <span class="btn-group"> <a class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown" href="#">Style <span class="caret"></span></a>
                   <ul class="dropdown-menu">
                     <li class="active"><a href="#" rel="">Default</a></li>
                     <li class=""><a href="#" rel="table-striped">Stripped</a></li>
                     <li class=""><a href="#" rel="table-bordered">Bordered</a></li>
                   </ul>
-                  </span> <a class="btn btn-xs btn-default" href="#" rel="table-hover">Button</a> <a class="btn btn-xs btn-default" href="#" rel="table-condensed">Condensed</a> </span>
+                  </span> <a class="btn btn-xs btn-default" href="#" rel="table-condensed">Condensed</a> </span>
                   <div class="preview">Table</div>
                   <div class="view">
                     <table class="table" contenteditable="true">
@@ -323,9 +324,9 @@
                  <span class="configuration"> <span class="btn-group"> <a class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown" href="#">Style <span class="caret"></span></a>
                   <ul class="dropdown-menu">
                     <li class="active"><a href="#" rel="">Default</a></li>
-                    <li class=""><a href="#" rel="img-rounded">圆角</a></li>
-                    <li class=""><a href="#" rel="img-circle">圆圈</a></li>
-                    <li class=""><a href="#" rel="img-polaroid">相框</a></li>
+                    <li class=""><a href="#" rel="img-rounded">Rounded</a></li>
+                    <li class=""><a href="#" rel="img-circle">Circle</a></li>
+                    <li class=""><a href="#" rel="img-thumbnail">Thumbnail</a></li>
                   </ul>
                   </span> </span>
                   <div class="preview">Image</div>
@@ -336,18 +337,13 @@
                       <i class="glyphicon glyphicon-remove"></i>Delete
                     </a> 
                     <label class="drag btn btn-success btn-xs"><i class="glyphicon glyphicon-move"></i>Drag</label>
-                 <span class="configuration"><button type="button" class="btn btn-xs btn-default" data-target="#editorModal" role="button" data-toggle="modal">Editor</button> <span class="btn-group"> <a class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown" href="#">Style <span class="caret"></span></a>
-                  <ul class="dropdown-menu">
-                    <li class="active"><a href="#" rel="">Default</a></li>
-                    <li class=""><a href="#" rel="badge-success">Success</a></li>
-                    <li class=""><a href="#" rel="badge-warning">Warning</a></li>
-                    <li class=""><a href="#" rel="badge-important">重要</a></li>
-                    <li class=""><a href="#" rel="badge-info">Prompt</a></li>
-                    <li class=""><a href="#" rel="badge-inverse">Reciprocal</a></li>
-                  </ul>
-                  </span> </span>
+                 <span class="configuration"><button type="button" class="btn btn-xs btn-default" data-target="#editorModal" role="button" data-toggle="modal">Editor</button></span>
                   <div class="preview">Badge</div>
-                  <div class="view"> <span class="badge" contenteditable="true">1</span> </div>
+                  <div class="view"> <span class="badge" contenteditable="true">1</span> 
+                  <button class="btn btn-primary" type="button" id="aeaoofnhgocdbnbeljkmbjdmhbcokfdb-mousedown">
+                    Messages <span class="badge">4</span>
+                   </button>
+                   </div>
                 </div>
                 <div class="box box-element ui-draggable"> 
                   <a href="#close" class="remove btn btn-danger btn-xs">
@@ -397,15 +393,15 @@
                     <label class="drag btn btn-success btn-xs"><i class="glyphicon glyphicon-move"></i>Drag</label>
                   <span class="configuration"> <span class="btn-group"> <a class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown" href="#">Style <span class="caret"></span></a>
                   <ul class="dropdown-menu">
-                    <li class="active"><a href="#" rel="">Default</a></li>
-                    <li class=""><a href="#" rel="alert-info">Prompt</a></li>
-                    <li class=""><a href="#" rel="alert-error">Error</a></li>
-                    <li class=""><a href="#" rel="alert-success">Success</a></li>
+                    <li class="active"><a href="#" rel="alert-success">Success</a></li>
+                    <li class=""><a href="#" rel="alert-info">Info</a></li>
+                    <li class=""><a href="#" rel="alert-warning">Warning</a></li>
+                    <li class=""><a href="#" rel="alert-danger">Danger</a></li>
                   </ul>
                   </span> </span>
                   <div class="preview">Alerts</div>
                   <div class="view">
-                    <div class="alert" contenteditable="true">
+                    <div class="alert alert-success" contenteditable="true">
                       <button type="button" class="close" data-dismiss="alert">×</button>
                       <h4>Alert!</h4>
                       <strong>Warning!</strong> Best check yo self. you're not looking too good. </div>

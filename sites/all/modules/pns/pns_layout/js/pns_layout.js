@@ -491,13 +491,15 @@
 					var titleValue = titleObject[0].value;
 					if(titleValue === undefined || titleValue.length == 0){
 						alert('title field is required');
+					}else if(titleValue.length > 128){
+						alert('title should be shorter than 128');
 					}else{
 						$("#node-save").attr("disabled",true);
 						var node_save_type = $("#node-save-type")[0].value;
 						var node_nid = $("#node-nid")[0].value;
 						var layout_html = $(".demo").html();
 						var pure_html = $.fn.downloadLayoutSrc();
-						console.log(pure_html);
+						//console.log(pure_html);
 						
 						var url = '/save_rich_message/' + titleValue + '/' + node_save_type + '/' + node_nid;
 						$.ajax({
@@ -508,8 +510,17 @@
 							success : function(data) {
 								$("#node-save").attr("disabled",false);
 								// console.log(data);
-								// console.log(data.urlpath);
-								$(location).attr('href', data.urlpath);								
+								 //console.log(data.urlpath);
+								 //console.log($(location).attr('href'));
+								 //console.log('http://pns.uangel.com/'+ data.urlpath);
+								 if($(location).attr('href') == 'http://pns.uangel.com'+ data.urlpath){
+								 	//console.log('same');
+								 	location.reload();
+								 }else{
+								 	$(location).attr('href', data.urlpath);
+								 }
+								//$(location).attr('href', data.urlpath);
+								//window.location.replace(data.urlpath);								
 							}
 						});
 					}
