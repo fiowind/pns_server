@@ -58,6 +58,7 @@ function _selectQueueTable(table, msgType, count, callback) {
 		sql = "select * from " + table + 
 					 " where (status is null or status = 'requesting' or status = 'retrying')" +
 					 " 	 and maximum_retry_cnt > attempted_retry_cnt" +
+					 "   and (scheduled_at = null or scheduled_at <= " + (Date.now()).toString().slice(0,10) + ")" +
 					 " limit " + count;
 
 	}
@@ -65,6 +66,7 @@ function _selectQueueTable(table, msgType, count, callback) {
 		sql = "select * from " + table + 
 					 " where (status is null or status = 'requesting' or status = 'retrying')" +
 					 " 	 and maximum_retry_cnt > attempted_retry_cnt" +
+					 "   and (scheduled_at = null or scheduled_at <= " + (Date.now()).toString().slice(0,10) + ")" +
 					 " 	 and target = '" + msgType + "'" + 
 					 " limit " + count;
 	}

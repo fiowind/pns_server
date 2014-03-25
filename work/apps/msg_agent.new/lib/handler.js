@@ -26,7 +26,7 @@ function smsSender(data) {
 			 'smdn=' + data.sender_mdn + '&' +
 			 'rmdn=' + data.receiver_mdn + '&' +
 			 'call=' + data.callback_mdn + '&' +
-			 'msg=' + escape(U2E.convert(data.text).toString('binary'));
+			 'msg=' + escape(U2E.convert(data.sms_text).toString('binary'));
 
 	urlObj = url.parse(urlStr);
 

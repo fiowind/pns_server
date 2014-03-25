@@ -177,8 +177,8 @@ function start() {
 
 			sendData.tid = temp.tid;
 			sendData.app_id = temp.app_id;
-			sendData.text = escape(temp.text);
-			sendData.url = escape(temp.url);
+			sendData.text = JSON.parse(temp.text);
+			sendData.url = temp.url;
 
 			sendStr = '5:::{"name": "push", "args": ["server", ' + JSON.stringify(sendData) + ']}';
 			_sendToSocket(socket, sendStr, function(err) {
@@ -226,12 +226,13 @@ exports.start = start;
 function _sendToSocket(socket, msg, callback) {
 
 	try {
-		var buf = new Buffer(4 + msg.length);
+		var temp = new Buffer(msg);
+		var buf = new Buffer(4 + temp.length);
 		buf.fill();
-		buf.writeInt32BE(msg.length, 0);
-		buf.write(msg, 4, msg.length);
+		buf.writeInt32BE(temp.length, 0);
+		buf.write(temp.toString(), 4, temp.length);
 
-		log.debug('['+socket.deviceId+'] : _sendToSocket : ' + msg.length + ' [' + msg + ']');
+		log.debug('['+socket.deviceId+'] : _sendToSocket : ' + temp.length + ' [' + msg + ']');
 
 		socket.write(buf);
 		callback(null);
@@ -458,8 +459,8 @@ function _getQueueMsg(socket) {
 							var sendData = {};
 							sendData.tid = row.tid;
 							sendData.app_id = row.app_id;
-							if (row.text) sendData.text = escape(row.text);
-							if (row.url) sendData.url = escape(row.url);
+							if (row.text) sendData.text = JSON.parse(row.text);
+							if (row.url) sendData.url = row.url;
 							arr.push(sendData);
 
 							if (len === (i+1)) {
