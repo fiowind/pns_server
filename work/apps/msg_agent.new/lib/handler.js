@@ -161,14 +161,7 @@ function uapnsSender(data) {
 		else {
 			if (rows[0].is_connected === 'true') {
 				sessionId = rows[0].session_id.split('|');
-				//redisPub.publish(sessionId[0] + '|' + sessionId[1] + '|' + sessionId[2], JSON.stringify(data));
-				// only test
-				if (data.device_id === '459106046051829') {
-					redisPub.publish(sessionId[0] + '|' + sessionId[1] + '|' + sessionId[2], JSON.stringify(data));
-				}
-				else {
-					redisPub.publish('direct', JSON.stringify(data));
-				}
+				redisPub.publish(sessionId[0] + '|' + sessionId[1] + '|' + sessionId[2], JSON.stringify(data));
 			}
 			else {
 				_updateResultQueueTable('UAPNS', data.tid, 'offline');
@@ -216,6 +209,7 @@ function _updateResultQueueTable(msgType, tid, status) {
 			conn.query(sql, function(err, result) {
 				if (err) {
 					conn.rollback(function() {
+						conn.release();
 						log.error('_updateResultQueueTable error : ' + err);
 					});
 				}
@@ -223,10 +217,12 @@ function _updateResultQueueTable(msgType, tid, status) {
 					conn.commit(function(err) {
 						if (err) {
 							conn.rollback(function() {
+								conn.release();
 								log.error('_updateResultQueueTable error : ' + err);
 							});
 						}
 						else {
+							conn.release();
 							log.debug('_updateResultQueueTable ok : ' + table + ', tid = ' + tid);
 						}
 					});
@@ -245,6 +241,7 @@ function _selectDeviceConnection(deviceId, callback) {
 		if (err) callback(err);
 		else {
 			conn.query(sql, function(err, rows) {
+				conn.release();
 				callback(err, rows);
 			});	
 		}

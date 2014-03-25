@@ -1,0 +1,3 @@
+insert into push_sms values (12345, 'SMS', '01035085273', '01035085273', '01035085273', 1, 0, 'test message', null, 0, 0, 0, 0);
+insert into push_gcm values (12345, 'AIzaSyCRfxDX7lIHEKkODyZ-z-4MDZ3pGOzwqtg', 'GCM', 'APA91bHZzvXv3zd6YnSiMiedvXpZk-ObCskvS6ucYbcKwfzD3gaSsT8n5kFud_MHS9u2CpfglEzvdY9C6FQJGbKytLVXPpv8vOEpsNdDGoynOr1JOorgumCcpQW82Wpepf5rAMm1PvVEGMc4vNPy6tFF-lwvqYKr5Q', 1, 0, 'test message', 'http://www.naver.ocm', null, 0, 0, 0, 0 );
+insert into push_direct values (12345, '359106046051829', '1234567890', 1, 0, 'test message', 'http://www.naver.com', null, 0, 0, 0, 0);

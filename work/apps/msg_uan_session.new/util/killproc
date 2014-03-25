@@ -1,0 +1,63 @@
+#!/bin/sh
+
+#modified by okh
+pname=""
+force=0
+
+if [ $# -eq 1 ]; then 
+	pname=$1
+elif [ $# -eq 2 ]; then 
+	if [ $1 = "-force" ]; then 
+		force=1
+		pname=$2 
+	fi  
+fi
+
+if [ "$pname" = "" ]; then
+	echo "[usage] : $0 [-force] processName"
+	exit 1
+fi
+
+pslist=`  ps -ef|\
+	   grep -w -v vi|\
+	   grep -w -v vim|\
+	   grep -w -v cc|\
+	   grep -w -v gcc|\
+	   grep -w -v gdb|\
+	   grep -w -v xdb|\
+	   grep -w -v TIME|\
+	   grep -w -v grep|\
+	   grep -w -v tail|\
+	   grep -w -v /bin/sh|\
+	   grep -w -v killproc|\
+	   grep $pname`
+
+pids=`echo "$pslist"  | awk '{ print $2 }'`
+
+if [ "$pids" != "" ] ; then
+	echo "--------------------------------------------------------------------"
+	echo "$pslist"
+	echo "--------------------------------------------------------------------"
+	echo
+	if [ $force -eq 1 ]; then
+		ans="y"
+	else
+		#echo "$pname (" $pids ")A≫(¸|) A×AI±i¿a?[y|n]...."
+		echo "$pname (" $pids ")을(를) 죽일까요?[y|n]...."
+		read ans
+	fi
+
+	if [ "$ans" = "y" ] ;  then
+		#kill -INT	$pids
+		#kill -TERM $pids
+       kill -9 $pids
+		exit 0
+	else
+		exit 1
+	fi
+else
+	#echo "$pname ≫e³ðAI ¾ø½A´I´U."
+	echo "$pname 산놈이 없습니다."
+	exit 0
+fi
+

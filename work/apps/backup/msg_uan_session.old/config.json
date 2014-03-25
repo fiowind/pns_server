@@ -1,20 +1,20 @@
 {
 	"server": {
 		"host": "pns.uangel.com",
-		"port": 8080
+		"port": "8080"
 	},
 	"database": {
 		"mysql": {
 			"host": "localhost",
-			"port": 3306,
+			"port": "3306",
 			"user": "root",
 			"password": "root.123",
 			"database": "pns_server",
-			"connectTimeout": 1000
+			"connectTimeout": "1000"
 		},
 		"redis": {
 			"host": "localhost",
-			"port": 6329
+			"port": "6329"
 		}
 	},
 	"logLevel": "DBG",

@@ -116,7 +116,17 @@ function start() {
 					});
 					break;
 				case '5':
-					log.debug('[' + socket.deviceId + '] : event recv.');
+					//'5:::{"name": "poll", "args": ["client", {"device_id": "459106046051829"}]';
+            		var a = recvStr.indexOf('{');
+            		var b = JSON.parse(recvStr.slice(a));
+            		socket.deviceId = b.args[1].device_id;	
+
+					log.debug('[' + socket.deviceId + '] : event recv. [' + JSON.stringify(b) + ']');
+
+					_getQueueMsg(socket);
+
+					socket.deviceId = false;
+					socket.end();
 
 					break;
 				case '6':
@@ -174,7 +184,13 @@ function start() {
 			_sendToSocket(socket, sendStr, function(err) {
 				if (err) log.error('_sendToSocket error : ' + err);
 			});
- 
+		});
+
+		socket.on('poll', function(data) {
+			sendStr = '5:::{"name": "poll", "args": ' + JSON.stringify(data) + '}';
+			_sendToSocket(socket, sendStr, function(err) {
+				if (err) log.error('_sendToSocket error : ' + err);
+			});
 		});
 
 		socket.on('error', function(err) {
@@ -293,8 +309,6 @@ function _updatePushDirect(deviceId, tid, status, callback) {
 							   ", attempted_retry_cnt = attempted_retry_cnt + 1 " +
 							   ", last_attempted_at = " + (Date.now()).toString().slice(0,10) +
 						  " where tid = " + tid;
-
-	log.debug('------->[' + sql + ']');
 
 	mysqlPool.getConnection(function(err, conn) {
 		if (err) callback(err);
@@ -418,6 +432,111 @@ function _updateQueueOfflineMsg(row, callback) {
 	});
 }
 
+function _getQueueMsg(socket) {
 
+	async.waterfall([
+		function selectQueueMsg(callback) {
+			_selectQueueMsg(socket.deviceId, function(err, rows) {
+				callback(err, rows);
+			}); 
+		},
+		function updateQueueMsg(rows, callback) {
 
+			var arr = [];
+			var temp = '';
+
+			if (rows.length === 0) {
+				callback(null, null);
+			}
+			else {
+				log.debug('[' + socket.deviceId + '] _selectQueueMsg rows.length = ' + rows.length);
+				arr.push('server');
+
+				for (var i = 0; i < rows.length; i++) {
+					(function(temp, i, len) {
+						_updateQueueMsg(temp, function(err, row) {
+							var sendData = {};
+							sendData.tid = row.tid;
+							sendData.app_id = row.app_id;
+							if (row.text) sendData.text = escape(row.text);
+							if (row.url) sendData.url = escape(row.url);
+							arr.push(sendData);
+
+							if (len === (i+1)) {
+								callback(err, arr);
+							}
+						});
+					})(rows[i], i, rows.length);
+				}
+			}
+		}
+	],
+	function(err, arr) {
+		if (err) {
+			log.error('_getQueueMsg error : ' + err);
+		}
+		else {
+			if (arr) {
+				log.debug(JSON.stringify(arr));
+				socket.emit('poll', arr);
+			}
+		}
+	});
+}
+
+function _selectQueueMsg(deviceId, callback) {
+	var sql = '';
+	sql = "select * from push_direct " +
+				 " where device_id = '" + deviceId + "'" +
+				 "   and status = 'offline'";
+
+	mysqlPool.getConnection(function(err, conn) {
+		if (err) callback(err);
+		else {
+			conn.query(sql, function(err, rows) {
+				conn.release();
+				callback(err, rows);
+			});
+		}
+	});
+}
+
+function _updateQueueMsg(row, callback) {
+	var sql = '';
+	var status = row.status; 
+
+	if (status === 'requesting') status = 'success';
+	else status = 'success';
+
+	sql = "update push_direct set status = '" + status + "'" +
+						  " where tid = " + row.tid;
+
+	mysqlPool.getConnection(function(err, conn) {
+		if (err) callback(err);
+		else {
+			conn.query(sql, function(err, result) {
+				if (err) {
+					conn.rollback(function() {
+						conn.release();
+						callback(err);
+					});
+				}
+				else {
+					conn.commit(function(err) {
+						if (err) {	
+							conn.rollback(function() {
+								conn.release();
+								callback(err);
+							});
+						}
+						else {
+							conn.release();
+							callback(err, row);
+						}
+					});
+				}
+			});
+		}
+	});
+}
 

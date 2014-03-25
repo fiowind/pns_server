@@ -24,9 +24,11 @@ function _updateDeviceConnection_all(workerPid, callback) {
 	var sql = '';
 	var sessionIdLike = '';
 
-	sessionIdLike = os.hostname() + '|' + conf.server.port + '|' + workerPid || process.pid + '%';
+	sessionIdLike = os.hostname() + '|' + conf.server.port + '|' + workerPid + '%';
 	sql = "update device_connection set is_connected = 'false', session_id = null" +
 								" where session_id like '" + sessionIdLike + "'";
+
+	log.debug('sql ======> ' + sql);
 
 	mysqlPool.getConnection(function(err, conn) {
 		if (err) callback(err);

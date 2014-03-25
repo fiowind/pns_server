@@ -15,36 +15,23 @@ function getQueueRoute(route, handle, msgType, table) {
 
 	async.waterfall([
 		function selectQueueTable(callback) {
-			mysqlPool.getConnection(function(err, conn) {
-				if (err) callback(err);
-				else {
-					_selectQueueTable(conn, table, msgType, _getTps(msgType), function(err, rows) {
-						conn.release();
-						callback(err, rows);	
-					});
-				}
+			_selectQueueTable(table, msgType, _getTps(msgType), function(err, rows) {
+				callback(err, rows);	
 			});
 		},
 		function updateQueueTable(rows, callback) {
-
 			if (rows.length === 0) {
 				callback(null, null);
 			}
 			else {
-				log.info('rows.length = ' + rows.length);
 				_setSendCnt(msgType, rows.length);
+				log.info('rows.length = ' + rows.length);
 
             	for (var i = 0; i < rows.length; i++) {
                 	(function(temp) {
-                    	mysqlPool.getConnection(function(err, conn) {
-                        	if (err) callback(err);
-                        	else {
-                            	_updateQueueTable(conn, table, temp, function(err, row) {
-                                	conn.release();
-                                	callback(err, row);
-                            	});
-                        	}
-                    	});
+                    	_updateQueueTable(table, temp, function(err, row) {
+                        	callback(err, row);
+                        });
                 	})(rows[i]);
             	}
 			}
@@ -63,7 +50,7 @@ function getQueueRoute(route, handle, msgType, table) {
 }
 exports.getQueueRoute = getQueueRoute;
 
-function _selectQueueTable(conn, table, msgType, count, callback) {
+function _selectQueueTable(table, msgType, count, callback) {
 
 	var sql = '';
 
@@ -82,12 +69,18 @@ function _selectQueueTable(conn, table, msgType, count, callback) {
 					 " limit " + count;
 	}
 
-	conn.query(sql, function(err, rows) {
-		callback(err, rows);
+	mysqlPool.getConnection(function(err, conn) {
+		if (err) callback(err);
+		else {
+			conn.query(sql, function(err, rows) {
+				conn.release();
+				callback(err, rows);
+			});
+		}
 	});	
 }
 
-function _updateQueueTable(conn, table, row,  callback) {
+function _updateQueueTable(table, row,  callback) {
 
 	var status = row.status;
 	if 	 	(status === 'requesting') status = 'requested';
@@ -97,21 +90,29 @@ function _updateQueueTable(conn, table, row,  callback) {
 	var sql = "update " + table + "   set status = '" + status + "'" +
 			   					  " where tid = " + row.tid;	
 
-	conn.query(sql, function(err, result) {
-		if (err) {
-			conn.rollback(function() {
-				callback(err);
-			});	
-		}
+	mysqlPool.getConnection(function(err, conn) {
+		if (err) callback(err);
 		else {
-			conn.commit(function(err) {
+			conn.query(sql, function(err, result) {
 				if (err) {
 					conn.rollback(function() {
+						conn.release();
 						callback(err);
-					});
+					});	
 				}
 				else {
-					callback(null, row);
+					conn.commit(function(err) {
+						if (err) {
+							conn.rollback(function() {
+								conn.release();
+								callback(err);
+							});
+						}
+						else {
+							conn.release();
+							callback(null, row);
+						}
+					});
 				}
 			});
 		}
