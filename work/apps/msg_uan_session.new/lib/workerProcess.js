@@ -1,17 +1,21 @@
+var os = require('os');
+var net = require('net');
+var async = require('async');
 
 function start() {
 
 	var sockets = {};
 	var workerChannel = os.hostname() + '|' + conf.server.port + '|' + process.pid;
-	var temp = '';
 	var server = false;
 
-	log.debug('worker [' + proces.pid + '] started.!!!');
+	log.debug('worker [' + process.pid + '] started.!!!');
 
 	// listener unlimited
 	redisSub.setMaxListeners(0);
 	redisSub.subscribe(workerChannel);
 	redisSub.on('message', function(channel, data) {
+		var temp = '';
+
 		if (channel !== workerChannel) return;
 
 		temp = JSON.parse(data);
@@ -47,6 +51,10 @@ function start() {
 		});
 
 		socket.on('data', function(chunk) {
+
+			var recvLen = 0;
+			var recvStr = '';
+
 			if (!chunk) return;
 			log.debug('[data] : ' + chunk);
 
@@ -57,6 +65,9 @@ function start() {
 
 			switch(recvStr[0]) {
 				case '1':
+					var temp = '';
+					var sessionId = '';
+
 					socket.deviceId = false;
 					temp = recvStr.split(':');
 					socket.deviceId = temp[2];
@@ -67,10 +78,11 @@ function start() {
 						}
 						else {
 							if (rows.length) {
-								log.info('[' + socket.deivceId + '] : client connected. process.pid = [' + process.pid + ']');
 
 								sockets[socket.deviceId] = socket;
-								sessionId = os.hostname() + '|' + conf.server.port + '|' + process.pid + '|' + Date.now();
+								sessionId = workerChannel + '|' + Date.now();
+
+								log.info('[' + socket.deviceId + '] : client connected. sessionId = [' + sessionId + ']');
 
 								_updateDeviceConnection(socket.deviceId, 'true', sessionId, function(err, result) {
 									if (err) {
@@ -78,13 +90,17 @@ function start() {
 									}
 									else {	
 										sendStr = '1::' + sessionId;
-										_sendDataToSocket(socket, sendStr, function(err) {
-											if (err) log.error('_sendDataToSocket error : ' + err);
+										_sendToSocket(socket, sendStr, function(err) {
+											if (err) log.error('_sendToSocket error : ' + err);
+											else {
+												_doSendOfflineMsg(socket);
+											}
 										});
 									}
 								});
 							}
 							else {
+								log.warning('unknown user connected. force disconnected');
 								socket.deviceId = false;
 								socket.end();
 							}
@@ -92,10 +108,11 @@ function start() {
 					});
 					break;
 				case '2':
+					var sendStr = '2::';
 					log.debug('[' + socket.deviceId + '] : heartbeat recv.');
-					sendStr = '2::';
-					_sendDataToSocket(socket, sendStr, function(err) {
-						if (err) log.error('_sendDataToSocket error : ' + err);
+
+					_sendToSocket(socket, sendStr, function(err) {
+						if (err) log.error('_sendToSocket error : ' + err);
 					});
 					break;
 				case '5':
@@ -103,6 +120,10 @@ function start() {
 
 					break;
 				case '6':
+					var temp = '';
+					var temp2 = '';
+					var ack = {};
+
 					log.debug('[' + socket.deviceId + '] : ack recv.');
 
 					temp  = recvStr.split(':');
@@ -111,10 +132,18 @@ function start() {
 					ack.tid = temp2[0];
 					ack.errCode = temp2[1];
 
-					if (parseInt(ack.errCode, 10) === 0)
-						_updatePushDirect(socket.deviceId, ack.tid, 'success');
-					else
-						_updatePushDirect(socket.deviceId, ack.tid, 'failed');
+					log.info('ack.tid = [' + ack.tid + '], ack.errCode = [' + ack.errCode + ']');
+
+					if (parseInt(ack.errCode, 10) === 0) {
+						_updatePushDirect(socket.deviceId, ack.tid, 'success', function(err, result) {
+							if (err) log.error('_updatePushDirect error : ' + err);	
+						});
+					}
+					else {
+						_updatePushDirect(socket.deviceId, ack.tid, 'failed', function(err, result) {
+							if (err) log.error('_updatePushDirect error : ' + err);	
+						});
+					}
 
 					break;
 				case '0':
@@ -123,16 +152,18 @@ function start() {
 				case '7':
 				case '8':
 				default:
-					sendStr = '7::9999+unknown protocol';
-					_sendDataToSocket(socket, sendStr, function(err) {
-						if (err) log.error('_sendDataToSocket error : ' + err);
+					var sendStr = '7::9999+unknown protocol';
+					_sendToSocket(socket, sendStr, function(err) {
+						if (err) log.error('_sendToSocket error : ' + err);
 					});
 					break;
 			}
 		});
 
 		socket.on('push', function(data) {
-			temp = JSON.parese(dadta);
+			var temp = JSON.parse(data);
+			var sendData = {};
+			var sendStr = '';
 
 			sendData.tid = temp.tid;
 			sendData.app_id = temp.app_id;
@@ -140,8 +171,8 @@ function start() {
 			sendData.url = escape(temp.url);
 
 			sendStr = '5:::{"name": "push", "args": ["server", ' + JSON.stringify(sendData) + ']}';
-			_sendDataToSocket(socket, sendStr, function(err) {
-				if (err) log.error('_sendDataToSocket error : ' + err);
+			_sendToSocket(socket, sendStr, function(err) {
+				if (err) log.error('_sendToSocket error : ' + err);
 			});
  
 		});
@@ -179,7 +210,7 @@ exports.start = start;
 function _sendToSocket(socket, msg, callback) {
 
 	try {
-		var buf = new Bufffer(4 + msg.length);
+		var buf = new Buffer(4 + msg.length);
 		buf.fill();
 		buf.writeInt32BE(msg.length, 0);
 		buf.write(msg, 4, msg.length);
@@ -187,7 +218,6 @@ function _sendToSocket(socket, msg, callback) {
 		log.debug('['+socket.deviceId+'] : _sendToSocket : ' + msg.length + ' [' + msg + ']');
 
 		socket.write(buf);
-
 		callback(null);
 	}
 	catch (catchErr) {
@@ -216,8 +246,14 @@ function _updateDeviceConnection(deviceId, isConnected, sessionId, callback) {
 	var sql = '';
 	var sessionIdLike = '';
 
-	sql = "update device_connection set is_connected = '" + isConnected + "', session_id = '" + sessionId + "'" +
+	if (sessionId) { 
+		sql = "update device_connection set is_connected = '" + isConnected + "', session_id = '" + sessionId + "'" +
 									" where device_id = '" + deviceId + "'";
+	}
+	else {
+		sql = "update device_connection set is_connected = '" + isConnected + "', session_id = " + sessionId + 
+									" where device_id = '" + deviceId + "'";
+	}
 
 	mysqlPool.getConnection(function(err, conn) {
 		if (err) callback(err);
@@ -248,7 +284,7 @@ function _updateDeviceConnection(deviceId, isConnected, sessionId, callback) {
 	});
 }
 
-function _updatePushDirect(deviceId, tid, status) {
+function _updatePushDirect(deviceId, tid, status, callback) {
 
 	var sql = '';
 
@@ -258,6 +294,8 @@ function _updatePushDirect(deviceId, tid, status) {
 							   ", last_attempted_at = " + (Date.now()).toString().slice(0,10) +
 						  " where tid = " + tid;
 
+	log.debug('------->[' + sql + ']');
+
 	mysqlPool.getConnection(function(err, conn) {
 		if (err) callback(err);
 		else {
@@ -287,24 +325,24 @@ function _updatePushDirect(deviceId, tid, status) {
 	});
 }
 
-function _getQueuePushDirect(socket) {
+function _doSendOfflineMsg(socket) {
 
 	async.waterfall([
-		function selectQueuePushDirect(callback) {
-			_selectQueuePushDirect(socket.deviceId, function(err, rows) {
+		function selectQueueOfflineMsg(callback) {
+			_selectQueueOfflineMsg(socket.deviceId, function(err, rows) {
 				callback(err, rows);
 			}); 
 		},
-		function updateQueuePushDirect(rows, callback) {
+		function updateQueueOfflineMsg(rows, callback) {
 			if (rows.length === 0) {
 				callback(null, null);
 			}
 			else {
-				log.debug('[' + socket.deviceId + '] push_direct rows.length = ' + rows.length);
+				log.debug('[' + socket.deviceId + '] _selectQueueOfflineMsg rows.length = ' + rows.length);
 
 				for (var i = 0; i < rows.length; i++) {
 					(function(row) {
-						_updateQueuePushDirect(row, function(err, result) {
+						_updateQueueOfflineMsg(row, function(err, result) {
 							callback(err, row);
 						});
 					})(rows[i]);
@@ -313,14 +351,22 @@ function _getQueuePushDirect(socket) {
 		}
 	],
 	function(err, row) {
-
+		if (err) {
+			log.error('_doSendOfflineMsg error : ' + err);
+		}
+		else {
+			if (row) {
+				socket.emit('push', JSON.stringify(row));
+			}
+		}
+	});
 }
 
-function _selectQueuePushDirect(deviceId, callback) {
+function _selectQueueOfflineMsg(deviceId, callback) {
 	var sql = '';
 	sql = "select * from push_direct " +
-				 " where deivce_id = '" + deviceId + "'" +
-				 "   and (status = 'offline' or status = 'requesting' or status = 'retrying')";
+				 " where device_id = '" + deviceId + "'" +
+				 "   and status = 'offline'";
 
 	mysqlPool.getConnection(function(err, conn) {
 		if (err) callback(err);
@@ -333,7 +379,7 @@ function _selectQueuePushDirect(deviceId, callback) {
 	});
 }
 
-function _updateQueuePushDirect(row, callback) {
+function _updateQueueOfflineMsg(row, callback) {
 	var sql = '';
 	var status = row.status; 
 

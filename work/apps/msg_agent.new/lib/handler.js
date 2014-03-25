@@ -160,9 +160,15 @@ function uapnsSender(data) {
 		}
 		else {
 			if (rows[0].is_connected === 'true') {
-				sessionId = rows[0].session_id.splite('|');
-				//redisPub(sessionId[0] + '|' + sessionId[1] + '|' + sessionId[2], JSON.stringify(data));
-				redisPub('direct', JSON.stringify(data));
+				sessionId = rows[0].session_id.split('|');
+				//redisPub.publish(sessionId[0] + '|' + sessionId[1] + '|' + sessionId[2], JSON.stringify(data));
+				// only test
+				if (data.device_id === '459106046051829') {
+					redisPub.publish(sessionId[0] + '|' + sessionId[1] + '|' + sessionId[2], JSON.stringify(data));
+				}
+				else {
+					redisPub.publish('direct', JSON.stringify(data));
+				}
 			}
 			else {
 				_updateResultQueueTable('UAPNS', data.tid, 'offline');

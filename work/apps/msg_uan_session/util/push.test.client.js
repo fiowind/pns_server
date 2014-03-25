@@ -11,7 +11,7 @@ for (var i = 0; i < max; i++) {
 	socket[i].setNoDelay(true);
 	socket[i].setKeepAlive(true);
 
-	start(socket[i], {port: 8100, host: 'localhost'});
+	start(socket[i], {port: 8081, host: 'localhost'});
 }
 
 function start(socket, option) {
@@ -38,6 +38,15 @@ function start(socket, option) {
 		if (!ret) {
 			// error
 		}
+
+/*
+		sendStr = '5:::{"name": "pool", "args": ["client", {"device_id", "459106046051829"}]';
+		ret = sendToSocket(socket, sendStr);
+		if (!ret) {
+			// error
+		}
+*/
+
 	});
 
 	socket.on('close', function() {
@@ -63,8 +72,14 @@ function start(socket, option) {
 		if (recvStr[0] === '5') {
 			var a = recvStr.indexOf('{');
 			var b = JSON.parse(recvStr.slice(a));
-			console.log('b-------->' + JSON.stringify(b));
-			console.log(unescape(b.args[1]));
+			console.log(b.args[1]);
+
+			sendStr = '6:::' + b.args[1].tid + '+0';
+			console.log('--->sendStr : ' + sendStr);
+			ret = sendToSocket(socket, sendStr);
+			if (!ret) {
+				// error
+			}
 		}
 
 		console.log(recvLen);
