@@ -3,6 +3,50 @@
 function pns_form_node_submit($node, $form, &$form_state) {
 	
 }
+	
+function _make_send_message($campaign_node, $message_node){
+	$ret_arr = array();
+
+	$popup_option = taxonomy_term_load($message_node->field_popup_option['und'][0]['tid']);
+	$detail_link = array();
+
+	switch($popup_option->name) {
+		case "Internal Rich Message":
+			$detail_link["option"] = "internal";
+			//$detail_link["url"] = $GLOBALS['base_url'] . '/sites/default/files/'. $message_node->field_popup_image['und'][0]['filename'];
+			break;
+
+		case "Internal URL":
+			$detail_link["option"] = "internal";
+			$detail_link["url"] = $message_node->field_popup_internal_url['und'][0]['url'];
+			break;
+
+		case "External Browser":
+			$detail_link["option"] = "external";
+			$detail_link["url"] = $message_node->field_popup_external_url['und'][0]['url'];
+			break;
+
+		case "Call App":
+
+		default: 
+			break;
+	}
+
+	$ret_arr["indicator"] = array(
+		"icon_url" => $GLOBALS['base_url'] . '/sites/default/files/'. $message_node->field_indicator_icon['und'][0]['filename'],
+		"text" => $message_node->field_indicator_text['und'][0]['value'],
+		"detail_link" => $detail_link
+	);
+
+	$ret_arr["popup"] = array(
+			"text" => $message_node->field_popup_text['und'][0]['value'],
+			"img_url" => $GLOBALS['base_url'] . '/sites/default/files/'. $message_node->field_popup_image['und'][0]['filename'],
+			"detail_link" => $detail_link
+	);
+
+	$ret_arr['popup_option'] = $popup_option->name;
+	return $ret_arr;
+}
 
 function _insert_direct_push_message($campaign_node){
 	$maximum_retry_cnt = 5;
@@ -10,10 +54,15 @@ function _insert_direct_push_message($campaign_node){
 
 	$message_id = $campaign_node->field_ref_message['und'][0]['target_id'];
 	$message_node = node_load($message_id);
-	$rich_message_id = $campaign_node->field_message_for_direct['und'][0]['target_id'];
-	$rich_message_node = node_load($rich_message_id);
+	// $rich_message_id = $campaign_node->field_message_for_direct['und'][0]['target_id'];
+	// $rich_message_node = node_load($rich_message_id);
 
-	$url_prefix = 'http://pns.uangel.com/push/'.$campaign_node->nid.'/direct/';
+	$sent_message = _make_send_message($campaign_node, $message_node);
+	$popup_option = $sent_message ['popup_option'];
+	unset($sent_message['popup_option']);
+
+	$url_prefix_for_check = $GLOBALS['base_url']. '/push/'.$campaign_node->nid.'/direct/';
+	$url_prefix_for_detail = $GLOBALS['base_url']. '/detail/'.$campaign_node->nid.'/direct/';
 
 	$scheduled_at = time();
 	$schedule_option_term = taxonomy_term_load($campaign_node->field_schedule_option['und'][0]['tid']);
@@ -103,8 +152,19 @@ function _insert_direct_push_message($campaign_node){
 			$entity->maximum_retry_cnt = $maximum_retry_cnt;
 			$entity->attempted_retry_cnt = 0;
 			
-			$entity->text = $rich_message_node->title;
-			$entity->url = $url_prefix.$client->nid;
+			// $entity->text = $rich_message_node->title;
+			$sent_message['popup']['check_url']= $url_prefix_for_check.$client->nid. '/view_popup';
+			$sent_message['popup']['check_open_url']= $url_prefix_for_check.$client->nid. '/open_popup';
+			$sent_message['indicator']['check_url']= $url_prefix_for_check.$client->nid. '/view_indicator';
+			$sent_message['indicator']['check_open_url']= $url_prefix_for_check.$client->nid. '/open_indicator';
+			
+			if($popup_option == 'Internal Rich Message'){
+				$sent_message['indicator']['detail_link']['url'] = $url_prefix_for_detail.$client->nid;
+				$sent_message['popup']['detail_link']['url'] = $url_prefix_for_detail.$client->nid;
+			}
+			
+			$entity->text = json_encode($sent_message);
+			$entity->url = '';
 			
 			$entity->requested_at = time();
 			$entity->scheduled_at = $scheduled_at;
@@ -128,6 +188,7 @@ function _insert_direct_push_message($campaign_node){
 			if(isset($message_node->field_short_message['und'][0]['safe_value'])){
 				$entity->sms_text = $message_node->field_short_message['und'][0]['safe_value'];
 			}
+			$entity->send_sms = $campaign_node->field_send_sms['und'][0]['value'];
 
 			$entity->field_ref_campaign['und'][0]['target_id'] = $campaign_node->nid;
 			$entity->field_ref_app_client['und'][0]['target_id'] = $client->nid;

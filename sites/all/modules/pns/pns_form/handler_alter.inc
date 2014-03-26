@@ -147,6 +147,15 @@ function pns_form_form_alter(&$form, &$form_state, $form_id) {
 		case 'target_node_form':
 		case 'message_node_form':
 			_unset_menu_items($form, $form_id);
+
+			unset($form['field_indicator_preview']);
+			$form['field_indicator_preview']['#markup'] = theme('indicator_preview',array('form' => $form));
+			$form['field_indicator_preview']['#weight'] = 0;
+
+			unset($form['field_popup_preview']);
+			$form['field_popup_preview']['#markup'] = theme('popup_preview',array('form' => $form));
+			$form['field_popup_preview']['#weight'] = 1;
+
 			break;	
 		case 'rich_message_node_form':
 			_unset_menu_items($form, $form_id);

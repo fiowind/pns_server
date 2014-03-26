@@ -75,6 +75,8 @@ function start() {
 					_selectDeviceConnection(socket.deviceId, function(err, rows) {
 						if (err) {
 							log.error('_selectDeviceConnection error device_id = [' + socket.deviceId + '] : ' + err);
+							socket.deviceId = false;
+							socket.end();
 						}
 						else {
 							if (rows.length) {
@@ -116,14 +118,14 @@ function start() {
 					});
 					break;
 				case '5':
-					//'5:::{"name": "poll", "args": ["client", {"device_id": "459106046051829"}]';
+					//'5:::{"name": "poll", "args": ["client", {"device_id": "459106046051829"}]}';
             		var a = recvStr.indexOf('{');
             		var b = JSON.parse(recvStr.slice(a));
             		socket.deviceId = b.args[1].device_id;	
 
 					log.debug('[' + socket.deviceId + '] : event recv. [' + JSON.stringify(b) + ']');
 
-					_getQueueMsg(socket);
+					_getQueueSendMsg(socket);
 
 					socket.deviceId = false;
 					socket.end();
@@ -168,26 +170,31 @@ function start() {
 					});
 					break;
 			}
+			return;
 		});
 
 		socket.on('push', function(data) {
 			var temp = JSON.parse(data);
+			var arr = [];
 			var sendData = {};
 			var sendStr = '';
+
+			arr.push('server');
 
 			sendData.tid = temp.tid;
 			sendData.app_id = temp.app_id;
 			sendData.text = JSON.parse(temp.text);
 			sendData.url = temp.url;
+			arr.push(sendData);
 
-			sendStr = '5:::{"name": "push", "args": ["server", ' + JSON.stringify(sendData) + ']}';
+			sendStr = '5:::{"name": "push", "args": ' + JSON.stringify(arr) + '}';
 			_sendToSocket(socket, sendStr, function(err) {
 				if (err) log.error('_sendToSocket error : ' + err);
 			});
 		});
 
-		socket.on('poll', function(data) {
-			sendStr = '5:::{"name": "poll", "args": ' + JSON.stringify(data) + '}';
+		socket.on('poll', function(arr) {
+			sendStr = '5:::{"name": "poll", "args": ' + JSON.stringify(arr) + '}';
 			_sendToSocket(socket, sendStr, function(err) {
 				if (err) log.error('_sendToSocket error : ' + err);
 			});
@@ -433,7 +440,7 @@ function _updateQueueOfflineMsg(row, callback) {
 	});
 }
 
-function _getQueueMsg(socket) {
+function _getQueueSendMsg(socket) {
 
 	async.waterfall([
 		function selectQueueMsg(callback) {
@@ -474,7 +481,7 @@ function _getQueueMsg(socket) {
 	],
 	function(err, arr) {
 		if (err) {
-			log.error('_getQueueMsg error : ' + err);
+			log.error('_getQueueSendMsg error : ' + err);
 		}
 		else {
 			if (arr) {

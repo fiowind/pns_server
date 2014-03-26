@@ -6,6 +6,27 @@ module_load_include('inc', 'pns_form', 'handler_validate');
 module_load_include('inc', 'pns_form', 'handler_delete');
 module_load_include('inc', 'pns_form', 'handler_alter');
 
+function pns_form_theme($existing, $type, $theme, $path) {
+  $theme = array();
+  $theme['indicator_preview'] = array(
+    //'variables' => array('renderer' => NULL, 'region' => NULL, 'content_type' => NULL),
+    // 'arguments' => array('form' => NULL),
+    'render element' => 'element',
+    'path' => drupal_get_path('module', 'pns_form') . '/theme',
+    'template' => 'field_indicator_preview',    
+    //'file' => '../includes/add-content.inc',    
+  );
+  $theme['popup_preview'] = array(
+    //'variables' => array('renderer' => NULL, 'region' => NULL, 'content_type' => NULL),
+    // 'arguments' => array('form' => NULL),
+    'render element' => 'element',
+    'path' => drupal_get_path('module', 'pns_form') . '/theme',
+    'template' => 'field_popup_preview',    
+    //'file' => '../includes/add-content.inc',    
+  );
+  return $theme;
+}
+
 function pns_form_init() {
   if (($_GET['q'] == 'system/ajax' || strstr($_GET['q'], 'file/ajax/')) && preg_match('/^[0-9a-zA-Z_]+_node_form/', $_POST['form_id'])) {
     module_load_include('inc', 'node', 'node.pages');
@@ -68,7 +89,8 @@ function _check_and_move_push_channel(){
 			$new_entity->maximum_retry_cnt = $maximum_retry_cnt;
 			$new_entity->attempted_retry_cnt = 0;
 
-			$new_entity->text = $old_entity->text;
+			// $new_entity->text = $old_entity->text;
+			$new_entity->text = str_replace("/direct/", "/gcm", $old_entity->text);
 			$new_entity->url = str_replace("/direct/", "/gcm/",$old_entity->url);
 
 			$new_entity->requested_at = $old_entity->requested_at;
@@ -79,6 +101,7 @@ function _check_and_move_push_channel(){
 			$new_entity->sms_callback_mdn = $old_entity->sms_callback_mdn;
 			$new_entity->sms_receiver_mdn = $old_entity->sms_receiver_mdn;
 			$new_entity->sms_text = $old_entity->sms_text;
+			$new_entity->send_sms = $old_entity->send_sms;
 			
 			$new_entity->field_ref_campaign['und'][0]['target_id'] = $old_entity->field_ref_campaign['und'][0]['target_id'];
 			$new_entity->field_ref_app_client['und'][0]['target_id'] = $old_entity->field_ref_app_client['und'][0]['target_id'];
@@ -97,7 +120,7 @@ function _check_and_move_push_channel(){
 		$old_entity = entity_load('data_push_gcm',array('0' => $item->tid));
 		$old_entity = array_shift($old_entity);
 
-		if(isset($old_entity->sms_receiver_mdn) && isset($old_entity->sms_text)){
+		if(isset($old_entity->sms_receiver_mdn) && isset($old_entity->sms_text) && $old_entity->send_sms == 1){
 			//update existing entity's status
 			$old_entity->status = $status_moved;
 			entity_save('data_push_gcm', $old_entity);

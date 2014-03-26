@@ -336,3 +336,39 @@ div .fieldset-wrapper{
     margin-top: 0em;
 }
 
+.indicator_icon {
+    float:left;
+}
+.indicator_text{
+    float:left;
+    background-color: black;
+    color:white;
+    padding: 10px;
+}
+
+.clear_both{
+    clear:both;
+}
+
+.popup_background{
+    background-image: url('/sites/default/files/popup_background.png');
+}
+
+.popup_image{
+    position: relative;
+    left: 70px;
+    top: 268px;
+}
+
+.popup_text{
+    position: absolute;
+    left: 101px;
+    top: 360px;
+}
+
+div.radio{
+    clear:both;
+}
+
+
+

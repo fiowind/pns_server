@@ -339,9 +339,9 @@
                     <label class="drag btn btn-success btn-xs"><i class="glyphicon glyphicon-move"></i>Drag</label>
                  <span class="configuration"><button type="button" class="btn btn-xs btn-default" data-target="#editorModal" role="button" data-toggle="modal">Editor</button></span>
                   <div class="preview">Badge</div>
-                  <div class="view"> <span class="badge" contenteditable="true">1</span> 
+                  <div class="view"> <span class="badge" contenteditable="true">123</span> 
                   <button class="btn btn-primary" type="button" id="aeaoofnhgocdbnbeljkmbjdmhbcokfdb-mousedown">
-                    Messages <span class="badge">4</span>
+                    Messages <span class="badge" contenteditable="true">456</span>
                    </button>
                    </div>
                 </div>
