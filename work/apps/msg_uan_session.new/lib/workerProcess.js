@@ -364,7 +364,7 @@ function _doSendOfflineMsg(socket) {
 
 				for (var i = 0; i < rows.length; i++) {
 					(function(row) {
-						_updateQueueOfflineMsg(row, function(err, result) {
+						_updateQueueOfflineMsg(row, function(err, row) {
 							callback(err, row);
 						});
 					})(rows[i]);
@@ -431,7 +431,7 @@ function _updateQueueOfflineMsg(row, callback) {
 						}
 						else {
 							conn.release();
-							callback(err, result);
+							callback(err, row);
 						}
 					});
 				}
@@ -464,6 +464,7 @@ function _getQueueSendMsg(socket) {
 					(function(temp, i, len) {
 						_updateQueueMsg(temp, function(err, row) {
 							var sendData = {};
+
 							sendData.tid = row.tid;
 							sendData.app_id = row.app_id;
 							if (row.text) sendData.text = JSON.parse(row.text);
