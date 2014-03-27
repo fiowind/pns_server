@@ -145,6 +145,8 @@ function pns_form_form_alter(&$form, &$form_state, $form_id) {
 			break;	
 		case 'application_node_form':
 		case 'target_node_form':
+			_unset_menu_items($form, $form_id);
+			break;
 		case 'message_node_form':
 			_unset_menu_items($form, $form_id);
 

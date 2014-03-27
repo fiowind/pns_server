@@ -88,7 +88,7 @@ function gcmSender(data) {
 
 	var message = false;
 	var sender = false;
-	var regid = false;
+	var regid = [];
 
 	if (!data) return;
 	log.debug('[GCM] data : ' + JSON.stringify(data));
@@ -99,7 +99,8 @@ function gcmSender(data) {
 	if (data.text) message.addDataWithKeyValue('text', data.text);
 	if (data.url)  message.addDataWithKeyValue('url', data.url);
 
-	message.collapseKey = Math.random() % 100 + 1;
+	//message.collapseKey = Math.random() % 100 + 1;
+	message.collapseKey = 'collapsKey';
 	message.delayWhileIdle = true;
 	message.timeToLive = 3;
 

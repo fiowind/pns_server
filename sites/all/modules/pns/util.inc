@@ -453,7 +453,6 @@ function _get_custom_page($node) {
 function _get_redirect_url_in_view_n_delete($viewOrDel, $node) {
 	$url = array();
 	switch($node->type) {
-		case 'campaign' :
 		case 'application':
 		case 'message':
 		case 'target':
@@ -472,6 +471,14 @@ function _get_redirect_url_in_view_n_delete($viewOrDel, $node) {
 				$url['path'] = $node->type.'/list';
 			}
 			$url['fragment'] = $fragments[$node -> type];
+			break;
+		case 'campaign' :
+			if($node->field_schedule_option['und'][0]['tid'] == 17){//Immediate
+				$url['path'] = 'report/'.$node ->nid;
+				$url['fragment'] = 'quickset-menu=5';
+			}else{
+				$url['path'] = 'custom_edit/'.$node->type.'/'.$node ->nid;
+			}
 			break;
 	}
 	return $url;

@@ -32,30 +32,45 @@ function _make_send_message($campaign_node, $message_node){
 			break;
 	}
 
+	$icon_url = !empty($message_node->field_indicator_icon['und'])?  					
+						$GLOBALS['base_url'] . '/sites/default/files/'. $message_node->field_indicator_icon['und'][0]['filename']: 
+						$GLOBALS['base_url'] . '/sites/default/files/indicator_no_icon.png';
+						
+
 	$ret_arr["indicator"] = array(
-		"icon_url" => $GLOBALS['base_url'] . '/sites/default/files/'. $message_node->field_indicator_icon['und'][0]['filename'],
+		"icon_url" => $icon_url,
 		"text" => $message_node->field_indicator_text['und'][0]['value'],
 		"detail_link" => $detail_link
 	);
 
-	$ret_arr["popup"] = array(
-			"text" => $message_node->field_popup_text['und'][0]['value'],
-			"img_url" => $GLOBALS['base_url'] . '/sites/default/files/'. $message_node->field_popup_image['und'][0]['filename'],
-			"detail_link" => $detail_link
-	);
+	$popup['text'] = !empty($message_node->field_popup_text['und'])? $message_node->field_popup_text['und'][0]['value']: NULL;
+	$popup['img_url'] = !empty($message_node->field_popup_image['und'])?
+					$GLOBALS['base_url'] . '/sites/default/files/'. $message_node->field_popup_image['und'][0]['filename']:
+					NULL;
 
+	if(isset($popup['text'])) {
+		$ret_arr['popup']['text'] = $popup['text'];
+	}
+
+	if(isset($popup['img_url'])){
+		$ret_arr['popup']['img_url'] = $popup['img_url'];
+	}
+	$ret_arr["popup"]['detail_link'] = $detail_link;
 	$ret_arr['popup_option'] = $popup_option->name;
+
 	return $ret_arr;
 }
 
 function _insert_direct_push_message($campaign_node){
+	global $user;
+  $account = user_load(1);
+  $user = $account;
+
 	$maximum_retry_cnt = 5;
 	$status_requesting = 'requesting';
 
 	$message_id = $campaign_node->field_ref_message['und'][0]['target_id'];
 	$message_node = node_load($message_id);
-	// $rich_message_id = $campaign_node->field_message_for_direct['und'][0]['target_id'];
-	// $rich_message_node = node_load($rich_message_id);
 
 	$sent_message = _make_send_message($campaign_node, $message_node);
 	$popup_option = $sent_message ['popup_option'];
@@ -153,10 +168,10 @@ function _insert_direct_push_message($campaign_node){
 			$entity->attempted_retry_cnt = 0;
 			
 			// $entity->text = $rich_message_node->title;
-			$sent_message['popup']['check_url']= $url_prefix_for_check.$client->nid. '/view_popup';
-			$sent_message['popup']['check_open_url']= $url_prefix_for_check.$client->nid. '/open_popup';
-			$sent_message['indicator']['check_url']= $url_prefix_for_check.$client->nid. '/view_indicator';
-			$sent_message['indicator']['check_open_url']= $url_prefix_for_check.$client->nid. '/open_indicator';
+			$sent_message['popup']['check_url']= $url_prefix_for_check.$client->nid. '/received';
+			$sent_message['popup']['check_open_url']= $url_prefix_for_check.$client->nid. '/read';
+			$sent_message['indicator']['check_url']= $url_prefix_for_check.$client->nid. '/received';
+			$sent_message['indicator']['check_open_url']= $url_prefix_for_check.$client->nid. '/read';
 			
 			if($popup_option == 'Internal Rich Message'){
 				$sent_message['indicator']['detail_link']['url'] = $url_prefix_for_detail.$client->nid;
@@ -193,14 +208,30 @@ function _insert_direct_push_message($campaign_node){
 			$entity->field_ref_campaign['und'][0]['target_id'] = $campaign_node->nid;
 			$entity->field_ref_app_client['und'][0]['target_id'] = $client->nid;
 
+			$entity->campaign_id = $campaign_node->nid;
+			
 			entity_save('data_push_direct', $entity);
 
 			$total_app_client_count++;
 		}
 
 		$c_node = node_load($campaign_node->nid);
-		$c_node->field_total_app_client_count['und'][0]['value'] = $total_app_client_count;
+		//$c_node->field_total_app_client_count['und'][0]['value'] = $total_app_client_count;
 		node_save($c_node);
+
+		//make campaing_result node
+		$c_result_node = new stdClass();
+		$c_result_node->title = $c_node->title;
+		$c_result_node->uid = $user->uid;
+		$c_result_node->type = "campaign_result";
+		$c_result_node->language = "und";
+		$c_result_node->field_total_client_count['und'][0]['value'] = $total_app_client_count;
+		$c_result_node->field_start_time['und'][0]['timezone'] = 'Asia/Seoul';
+		$c_result_node->field_start_time['und'][0]['timezone_db'] = 'Asia/Seoul';
+		$c_result_node->field_start_time['und'][0]['date_type'] = 'datetime';
+		$c_result_node->field_start_time['und'][0]['value'] = date("Y-m-d H:i:s");
+		$c_result_node->field_ref_campaign['und'][0]['target_id'] = $c_node->nid;
+		node_save($c_result_node);
 	}
 }
 

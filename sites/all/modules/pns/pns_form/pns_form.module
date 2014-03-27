@@ -52,10 +52,126 @@ function pns_form_cronapi($op, $function = NULL) {
       switch($function) {
         case 'check_and_move_push_channel':
           _check_and_move_push_channel();
+          _count_summary();
           break;
       }
       break;
   }
+}
+
+function _count_summary(){
+	//get published campaign list
+	$campaign_list = views_get_view_result('list_campagin', 'panel_pane_3');
+	foreach($campaign_list as $campaign){
+		$campaign_nid = $campaign->nid;
+		$campaign_result_nid = $campaign->field_ref_campaign_node_nid;
+		$campaign_result_node = node_load($campaign_result_nid);
+
+		//direct
+		$result = db_query('SELECT p.status, count(*) as count FROM {push_direct} p WHERE p.campaign_id = :cid GROUP BY p.status', array(':cid' => $campaign_nid));
+		
+		$direct_count = array(
+			'trying' => 0,
+			'sent' => 0,
+			'failed' => 0,
+			'received' => 0,
+			'read' => 0
+		);
+		
+		foreach ($result as $record) {
+			$status = $record->status;
+			$count = intval($record->count);
+			
+			switch($status){
+				case  "requesting" :
+				case  "requested" :
+				case  "retrying" :
+				case  "offline" :
+					$direct_count['trying'] = $direct_count['trying'] + $count;
+				break;
+				
+				case  "success" :
+					$direct_count['sent'] = $direct_count['sent'] + $count;
+				break;
+
+				case  "failed" :
+				case  "moved" :
+				case  "blocked" :
+					$direct_count['failed'] = $direct_count['failed'] + $count;
+				break;
+
+				case  "received" :
+					$direct_count['received'] = $direct_count['received'] + $count;
+				break;
+				case  "read" :
+					$direct_count['read'] = $direct_count['read'] + $count;
+				break;
+			}
+		}
+
+		$campaign_result_node->field_direct_trying['und'][0]['value'] = $direct_count['trying'];
+		$campaign_result_node->field_direct_sent['und'][0]['value'] = $direct_count['sent'];
+		$campaign_result_node->field_direct_failed['und'][0]['value'] = $direct_count['failed'];
+		$campaign_result_node->field_direct_received['und'][0]['value'] = $direct_count['received'];
+		$campaign_result_node->field_direct_read['und'][0]['value'] = $direct_count['read'];
+
+		// gcm
+		$result = db_query('SELECT p.status, count(*) as count FROM {push_gcm} p WHERE p.campaign_id = :cid GROUP BY p.status', array(':cid' => $campaign_nid));
+		
+		$gcm_count = array(
+			'trying' => 0,
+			'sent' => 0,
+			'failed' => 0,
+			'received' => 0,
+			'read' => 0
+		);
+		
+		foreach ($result as $record) {
+			$status = $record->status;
+			$count = intval($record->count);
+			
+			switch($status){
+				case  "requesting" :
+				case  "requested" :
+				case  "retrying" :
+				case  "offline" :
+					$gcm_count['trying'] = $gcm_count['trying'] + $count;
+				break;
+				
+				case  "success" :
+					$gcm_count['sent'] = $gcm_count['sent'] + $count;
+				break;
+
+				case  "failed" :
+				case  "moved" :
+				case  "blocked" :
+					$gcm_count['failed'] = $gcm_count['failed'] + $count;
+				break;
+
+				case  "received" :
+					$gcm_count['received'] = $gcm_count['received'] + $count;
+				break;
+				case  "read" :
+					$gcm_count['read'] = $gcm_count['read'] + $count;
+				break;
+			}
+		}
+
+		$campaign_result_node->field_gcm_trying['und'][0]['value'] = $gcm_count['trying'];
+		$campaign_result_node->field_gcm_sent['und'][0]['value'] = $gcm_count['sent'];
+		$campaign_result_node->field_gcm_failed['und'][0]['value'] = $gcm_count['failed'];
+		$campaign_result_node->field_gcm_received['und'][0]['value'] = $gcm_count['received'];
+		$campaign_result_node->field_gcm_read['und'][0]['value'] = $gcm_count['read'];
+
+		// sms
+		$result = db_query('SELECT count(*) as count FROM {push_sms} p WHERE p.campaign_id = :cid', array(':cid' => $campaign_nid));
+		foreach ($result as $record) {
+			$campaign_result_node->field_sms_sent['und'][0]['value'] = intval($record->count);
+		}
+
+		//save result
+		node_save($campaign_result_node);
+	}
 }
 
 function _check_and_move_push_channel(){
@@ -102,7 +218,9 @@ function _check_and_move_push_channel(){
 			$new_entity->sms_receiver_mdn = $old_entity->sms_receiver_mdn;
 			$new_entity->sms_text = $old_entity->sms_text;
 			$new_entity->send_sms = $old_entity->send_sms;
-			
+
+			$new_entity->campaign_id = $old_entity->campaign_id;
+
 			$new_entity->field_ref_campaign['und'][0]['target_id'] = $old_entity->field_ref_campaign['und'][0]['target_id'];
 			$new_entity->field_ref_app_client['und'][0]['target_id'] = $old_entity->field_ref_app_client['und'][0]['target_id'];
 
@@ -142,6 +260,8 @@ function _check_and_move_push_channel(){
 			$new_entity->callback_mdn = $old_entity->sms_callback_mdn;
 			$new_entity->receiver_mdn = $old_entity->sms_receiver_mdn;
 			$new_entity->text = $old_entity->sms_text;
+
+			$new_entity->campaign_id = $old_entity->campaign_id;
 			
 			$new_entity->field_ref_campaign['und'][0]['target_id'] = $old_entity->field_ref_campaign['und'][0]['target_id'];
 			$new_entity->field_ref_app_client['und'][0]['target_id'] = $old_entity->field_ref_app_client['und'][0]['target_id'];

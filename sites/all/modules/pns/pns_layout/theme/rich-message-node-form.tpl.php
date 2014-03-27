@@ -321,7 +321,8 @@
                       <i class="glyphicon glyphicon-remove"></i>Delete
                     </a> 
                     <label class="drag btn btn-success btn-xs"><i class="glyphicon glyphicon-move"></i>Drag</label>
-                 <span class="configuration"> <span class="btn-group"> <a class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown" href="#">Style <span class="caret"></span></a>
+                 <span class="configuration"> <button type="button" class="btn btn-xs btn-default" data-target="#editorModal" role="button" data-toggle="modal">Editor </button>
+                 <span class="btn-group"> <a class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown" href="#">Style <span class="caret"></span></a>
                   <ul class="dropdown-menu">
                     <li class="active"><a href="#" rel="">Default</a></li>
                     <li class=""><a href="#" rel="img-rounded">Rounded</a></li>
@@ -329,8 +330,9 @@
                     <li class=""><a href="#" rel="img-thumbnail">Thumbnail</a></li>
                   </ul>
                   </span> </span>
+
                   <div class="preview">Image</div>
-                  <div class="view"> <img alt="140x140" src="<?php echo  '/'.drupal_get_path('module', 'pns_layout').'/img/a.jpg'?>"> </div>
+                  <div class="view"> <img alt="140x140" src="<?php echo  '/'.drupal_get_path('module', 'pns_layout').'/img/a.jpg'?>" contenteditable="true"> </div>
                 </div>
                 <div class="box box-element ui-draggable"> 
                   <a href="#close" class="remove btn btn-danger btn-xs">
